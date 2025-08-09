@@ -170,7 +170,7 @@
       padding: 10px 30px;
       font-weight: bold;
     }
-    /* NEW: Toggle button style */
+    /* Toggle button style */
     #toggleScanModeBtn {
       background: #28a745;
       margin-bottom: 15px;
@@ -227,7 +227,7 @@
     const toggleScanModeBtn = document.getElementById('toggleScanModeBtn');
     let html5QrcodeScanner = null;
 
-    // NEW: Scan mode: false = single scan, true = continuous scan
+    // Scan mode: false = single scan, true = continuous scan
     let continuousScanMode = false;
 
     // Load data from local file in same repo
@@ -418,13 +418,13 @@
             finalCode = upcEtoUPC_A(qrCodeMessage);
           }
 
-          // NEW: Handle based on continuousScanMode
+          // Fix here for continuous mode so user just scans and results update automatically
           if (continuousScanMode) {
-            // In continuous mode, update search input & results but keep scanner open
             searchBox.value = finalCode;
             searchBox.dispatchEvent(new Event('input'));
+            searchBox.blur();
+            searchBox.focus();
           } else {
-            // Single scan: stop and close scanner after scan
             html5QrcodeScanner.stop().then(() => {
               html5QrcodeScanner.clear();
               html5QrcodeScanner = null;
@@ -439,7 +439,7 @@
           }
         },
         errorMessage => {
-          // Ignore errors for clean UX
+          // ignore scanning errors silently
         }
       ).catch(err => {
         statusDiv.style.display = 'block';
@@ -462,7 +462,7 @@
       searchBox.focus();
     }
 
-    // NEW: Toggle scan mode handler
+    // Toggle scan mode handler
     toggleScanModeBtn.addEventListener('click', () => {
       continuousScanMode = !continuousScanMode;
       toggleScanModeBtn.classList.toggle('active', continuousScanMode);
@@ -473,8 +473,12 @@
     });
 
     // Event listeners
-    scanBtn.addEventListener('click', openScanner);
-    closeScannerBtn.addEventListener('click', closeScanner);
+    scanBtn.addEventListener('click', () => {
+      openScanner();
+    });
+    closeScannerBtn.addEventListener('click', () => {
+      closeScanner();
+    });
 
     searchBox.addEventListener('input', (e) => {
       if (!isLoaded) return;
@@ -487,9 +491,8 @@
       }
     });
 
-    window.addEventListener('load', () => {
-      loadData();
-    });
+    // Load data on page load
+    window.addEventListener('load', loadData);
   </script>
 </body>
 </html>
