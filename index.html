@@ -1,385 +1,375 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Michigan Liquor Price Search with Barcode Scanner</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Michigan Liquor Price Search — Scanner + Continuous Save</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background-color: #f5f5f5;
+    /* --- Layout & base styles --- */
+    :root {
+      --primary: #007bff;
+      --success: #28a745;
+      --danger: #dc3545;
+      --muted: #666;
+      --bg: #f5f5f5;
+      --card: #fff;
     }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    h1 {
-      color: #333;
-      text-align: center;
-      margin-bottom: 10px;
-    }
-    .subtitle {
-      text-align: center;
-      color: #666;
-      margin-bottom: 30px;
-    }
-    .search-section {
-      margin-bottom: 30px;
-    }
-    button {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-      width: 100%;
-      margin-bottom: 15px;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-    input {
-      width: 100%;
-      padding: 12px;
-      border: 2px solid #ddd;
-      border-radius: 5px;
-      font-size: 16px;
-      box-sizing: border-box;
-    }
-    input:focus {
-      border-color: #007bff;
-      outline: none;
-    }
-    .status {
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 5px;
-      display: none;
-    }
-    .status.success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
-    }
-    .status.error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-    }
-    .help-text {
-      background: #e9ecef;
-      padding: 10px;
-      border-radius: 5px;
-      font-size: 14px;
-      color: #495057;
-      margin-top: 10px;
-    }
-    .results {
-      margin-top: 20px;
-    }
-    .product {
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      margin-bottom: 15px;
-      padding: 15px;
-      background: white;
-    }
-    .product-name {
-      font-size: 18px;
-      font-weight: bold;
-      color: #007bff;
-      margin-bottom: 10px;
-    }
-    .product-details {
-      margin-bottom: 15px;
-    }
-    .detail-row {
-      margin-bottom: 5px;
-      font-size: 14px;
-    }
-    .prices {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
-    .price-box {
-      background: #f8f9fa;
-      padding: 10px;
-      border-radius: 5px;
-      text-align: center;
-      flex: 1;
-      min-width: 120px;
-    }
-    .price-label {
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 5px;
-    }
-    .price-value {
-      font-size: 16px;
-      font-weight: bold;
-      color: #007bff;
-    }
-    .codes {
-      font-size: 12px;
-      color: #666;
-      margin-top: 10px;
-    }
-    .no-results {
-      text-align: center;
-      padding: 40px;
-      color: #666;
-    }
-    #scannerContainer {
-      display: none;
-      position: fixed;
-      z-index: 9999;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.8);
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-    }
-    #scanner {
-      width: 300px;
-      max-width: 90vw;
-      aspect-ratio: 1 / 1;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 0 12px #0f62fe;
-      background: #000;
-    }
-    #closeScannerBtn {
-      margin-top: 15px;
-      background: #dc3545;
-      width: auto;
-      padding: 10px 30px;
-      font-weight: bold;
-    }
-    #toggleScanModeBtn {
-      background: #28a745;
-      margin-bottom: 15px;
-    }
-    #toggleScanModeBtn.active {
-      background: #ffc107;
-      color: #000;
-    }
+    html,body { height:100%; margin:0; font-family:Arial,system-ui,-apple-system; background:var(--bg); -webkit-text-size-adjust:100%; }
+    .container { max-width:1000px; margin:20px auto; padding:20px; background:var(--card); border-radius:10px; box-shadow:0 2px 12px rgba(0,0,0,.08); }
+    h1 { margin:0 0 6px; text-align:center; color:#222; }
+    .subtitle { text-align:center; color:var(--muted); margin-bottom:18px; }
+    .controls { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+    .controls .full { grid-column:1/-1; }
+    button { background:var(--primary); color:#fff; border:none; padding:12px; font-size:15px; border-radius:8px; cursor:pointer; }
+    button:hover:not(:disabled){ filter:brightness(.95) }
+    button:disabled{ opacity:.6; cursor:not-allowed; }
+    #toggleScanModeBtn { background:#28a745; }
+    #toggleScanModeBtn.active { background:#ffc107; color:#000; }
+    input[type="search"] { width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; font-size:16px; box-sizing:border-box; }
+    .help { background:#eef2f7; padding:10px; border-radius:8px; color:#333; font-size:13px; }
+
+    /* --- Results layout --- */
+    .main-grid { display:grid; grid-template-columns: 1fr 340px; gap:16px; margin-top:16px; }
+    @media (max-width:980px){ .main-grid { grid-template-columns: 1fr; } }
+
+    .results { min-height:120px; }
+    .product { border:1px solid #e6e6e6; border-radius:8px; padding:12px; margin-bottom:12px; background:white; box-shadow:0 1px 4px rgba(0,0,0,.02); }
+    .product-name { color:var(--primary); font-weight:700; margin-bottom:6px; }
+    .detail-row { font-size:14px; color:#333; margin-bottom:6px; }
+    .prices { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+    .price-box { background:#f8f9fa; padding:8px; border-radius:6px; min-width:110px; text-align:center; }
+    .price-label { font-size:12px; color:var(--muted); }
+    .price-value { font-weight:700; color:var(--primary); }
+
+    .no-results { text-align:center; padding:20px; color:var(--muted); }
+
+    /* --- Scanner overlay --- */
+    #scannerContainer { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:9999; align-items:center; justify-content:center; flex-direction:column; }
+    #scanner { width:90vw; max-width:640px; aspect-ratio:1/1; border-radius:12px; overflow:hidden; background:#000; box-shadow:0 8px 30px rgba(0,0,0,.6); }
+    #scannerControls { margin-top:12px; display:flex; gap:10px; }
+    #closeScannerBtn { background:var(--danger); }
+
+    /* --- Saved scans column --- */
+    .side { background:#fafafa; padding:12px; border-radius:8px; border:1px solid #eee; height:fit-content; }
+    .side h3 { margin:0 0 8px; font-size:16px; }
+    .saved-list { max-height:60vh; overflow:auto; padding-right:6px; }
+    .saved-item { border:1px solid #e9e9e9; padding:8px; border-radius:6px; margin-bottom:8px; background:white; }
+    .saved-meta { font-size:12px; color:var(--muted); margin-bottom:6px; }
+
+    /* small */
+    .muted { color:var(--muted); font-size:13px; }
   </style>
 </head>
 <body>
   <div class="container" role="main">
     <h1>🍷 Michigan Liquor Price Search</h1>
-    <p class="subtitle">Search by code, name, type, vendor, or UPC</p>
+    <p class="subtitle">Search by item code, name, type, vendor, or UPC — camera & handheld scanner friendly</p>
 
-    <div class="search-section">
-      <button id="scanBtn" aria-label="Open barcode scanner">📷 Scan Barcode</button>
+    <div class="controls">
+      <button id="scanBtn" aria-label="Open barcode scanner">📷 Open Camera Scanner</button>
       <button id="toggleScanModeBtn" aria-pressed="false" aria-label="Toggle continuous scan mode">Toggle Scan Mode: Single Scan</button>
-      <input
-        type="text"
-        id="searchBox"
-        placeholder="Search by item code, name, type, vendor, or UPC..."
-        aria-label="Search input"
-        autocomplete="off"
-      />
-      <div class="help-text">
-        <strong>Search Tips:</strong> Try "Grey Goose", "Bourbon", "Vodka", or product codes like "121"
-      </div>
-      <div id="status" class="status" aria-live="polite"></div>
+      <input id="searchBox" class="full" type="search" placeholder="Type or scan a code — scanning a handheld scanner will send Enter" autocomplete="off" />
+      <div class="help full">Tip: For handheld (USB/Bluetooth) scanners, enable <strong>continuous mode</strong> and just aim & trigger — saved scans will be recorded when the scanner sends Enter. Camera scans also emulate this flow.</div>
     </div>
 
-    <div id="results" class="results" aria-live="polite"></div>
+    <div class="main-grid">
+      <div>
+        <div id="status" class="muted" aria-live="polite"></div>
+        <div id="results" class="results" aria-live="polite"></div>
+      </div>
+
+      <aside class="side" aria-label="Saved scans">
+        <h3>Saved scans</h3>
+        <div id="savedList" class="saved-list"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="clearSavedBtn" style="flex:1;background:#6c757d">Clear Saved</button>
+          <button id="downloadSavedBtn" style="flex:1;background:#17a2b8">Download CSV</button>
+        </div>
+      </aside>
+    </div>
   </div>
 
+  <!-- Scanner overlay -->
   <div id="scannerContainer" role="dialog" aria-modal="true" aria-hidden="true">
     <div id="scanner"></div>
-    <button id="closeScannerBtn" aria-label="Close barcode scanner">✖ Close Scanner</button>
+    <div id="scannerControls">
+      <button id="closeScannerBtn">✖ Close Scanner</button>
+    </div>
   </div>
 
-  <script src="https://unpkg.com/html5-qrcode@2.3.7/html5-qrcode.min.js"></script>
+  <!-- html5-qrcode -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <script>
+    /************************************************************************
+     * Full updated webapp:
+     * - local webprbk.txt (same folder) is loaded
+     * - camera scanner via html5-qrcode (continuous & single)
+     * - handheld (keyboard) scanner supported: Enter key causes save+clear
+     * - camera-scanned results emulate handheld Enter => saved & cleared
+     * - saved scans panel with download & clear
+     ************************************************************************/
+
+    // DOM
+    const searchBox = document.getElementById('searchBox');
+    const scanBtn = document.getElementById('scanBtn');
+    const toggleScanModeBtn = document.getElementById('toggleScanModeBtn');
+    const resultsDiv = document.getElementById('results');
+    const statusDiv = document.getElementById('status');
+
+    const scannerContainer = document.getElementById('scannerContainer');
+    const scannerDiv = document.getElementById('scanner');
+    const closeScannerBtn = document.getElementById('closeScannerBtn');
+
+    const savedListDiv = document.getElementById('savedList');
+    const clearSavedBtn = document.getElementById('clearSavedBtn');
+    const downloadSavedBtn = document.getElementById('downloadSavedBtn');
+
+    // Data & state
     let liquorData = [];
     let isLoaded = false;
-    const resultsDiv = document.getElementById('results');
-    const searchBox = document.getElementById('searchBox');
-    const statusDiv = document.getElementById('status');
-    const scannerContainer = document.getElementById('scannerContainer');
-    const scanBtn = document.getElementById('scanBtn');
-    const closeScannerBtn = document.getElementById('closeScannerBtn');
-    const toggleScanModeBtn = document.getElementById('toggleScanModeBtn');
     let html5QrcodeScanner = null;
+    let continuousScanMode = false; // false = single-scan (close on camera scan), true = continuous (keep open)
+    let savedScans = []; // { query, results[], ts }
 
-    let continuousScanMode = false;
-
+    /************ Data parsing & helpers ************/
     async function loadData() {
+      statusDiv.textContent = 'Loading data (webprbk.txt)…';
       try {
-        const res = await fetch('webprbk.txt');
-        if (!res.ok) throw new Error('Failed to fetch data file.');
-        const rawText = await res.text();
-        parseData(rawText);
-        statusDiv.style.display = 'block';
-        statusDiv.className = 'status success';
-        statusDiv.textContent = '✅ Data loaded successfully!';
+        const res = await fetch('./webprbk.txt');
+        if (!res.ok) throw new Error('Fetch failed: ' + res.status);
+        const txt = await res.text();
+        liquorData = parseFixedWidth(txt);
         isLoaded = true;
+        statusDiv.textContent = `✅ Loaded ${liquorData.length} products.`;
       } catch (err) {
-        statusDiv.style.display = 'block';
-        statusDiv.className = 'status error';
-        statusDiv.textContent = '❌ Failed to load data: ' + err.message;
+        isLoaded = false;
+        statusDiv.textContent = '❌ Could not load webprbk.txt — serve this file from same folder (use local http server). ' + err;
       }
     }
 
-    function parseData(txt) {
-      liquorData = [];
-      const lines = txt.split('\n');
+    function parseFixedWidth(txt) {
+      const lines = txt.split(/\r?\n/);
+      const out = [];
       for (const line of lines) {
-        if (line.length < 194) continue;
-        const codeRaw = line.slice(0, 5);
-        const code = String(Number(codeRaw));
-        const brandName = line.slice(5, 37).trim();
-        const adaNum = line.slice(37, 40).trim();
-        const adaName = line.slice(40, 65).trim();
-        const vendor = line.slice(65, 90).trim();
-        const liquorType = line.slice(90, 110).trim();
-        const proof = line.slice(110, 115).trim();
-        const bottleSize = line.slice(115, 122).trim();
-        const packSize = line.slice(122, 125).trim();
-        const onPriceRaw = line.slice(125, 136).trim().replace('..', '.');
-        const offPriceRaw = line.slice(136, 147).trim().replace('..', '.');
-        const shelfPriceRaw = line.slice(147, 158).trim().replace('..', '.');
-        const upcRaw1 = line.slice(158, 172).trim();
-        const upcRaw2 = line.slice(172, 186).trim();
-        const effectiveDate = line.slice(186, 194).trim();
+        if (!line || line.length < 194) continue; // skip bad lines
+        // Fields (1-based positions in spec)
+        const liquorCodeRaw = line.slice(0,5);
+        const liquorCode = liquorCodeRaw.replace(/^0+/, '') || '0';
+        const brandName = line.slice(5,37).trim();
+        const adaNumber = line.slice(37,40).trim();
+        const adaName = line.slice(40,65).trim();
+        const vendorName = line.slice(65,90).trim();
+        const liquorType = line.slice(90,110).trim();
+        const proof = line.slice(110,115).trim();
+        const bottleSize = line.slice(115,122).trim();
+        const packSize = line.slice(122,125).trim();
+        const onPremRaw = line.slice(125,136).trim();
+        const offPremRaw = line.slice(136,147).trim();
+        const shelfRaw = line.slice(147,158).trim();
+        const upc1Raw = line.slice(158,172).trim();
+        const upc2Raw = line.slice(172,186).trim();
+        const effectiveDate = line.slice(186,194).trim();
 
-        function fixUpc(upc) {
-          if (!upc) return '';
-          let trimmed = upc.replace(/^0+/, '');
-          if (trimmed.length === 10) trimmed = '0' + trimmed;
-          return trimmed.padStart(12, '0');
-        }
+        const onPremPrice = fixPrice(onPremRaw);
+        const offPremPrice = fixPrice(offPremRaw);
+        const shelfPrice = fixPrice(shelfRaw);
 
-        liquorData.push({
-          code,
-          brandName,
-          adaNum,
-          adaName,
-          vendor,
-          liquorType,
-          proof,
-          bottleSize,
-          packSize,
-          onPrice: parseFloat(onPriceRaw) || 0,
-          offPrice: parseFloat(offPriceRaw) || 0,
-          shelfPrice: parseFloat(shelfPriceRaw) || 0,
-          upc1: fixUpc(upcRaw1),
-          upc2: fixUpc(upcRaw2),
-          effectiveDate,
+        const upc1 = normalizeUPC(upc1Raw);
+        const upc2 = normalizeUPC(upc2Raw);
+
+        out.push({
+          liquorCode, brandName, adaNumber, adaName, vendorName, liquorType,
+          proof, bottleSize, packSize, onPremPrice, offPremPrice, shelfPrice,
+          upc1, upc2, effectiveDate
         });
       }
+      return out;
     }
 
+    function fixPrice(raw) {
+      if (!raw) return 0;
+      const cleaned = raw.replace(/[^0-9.]/g, '').replace(/\.{2,}/g, '.');
+      const n = parseFloat(cleaned);
+      return isNaN(n) ? 0 : n;
+    }
+
+    // Normalize UPC: remove leading zeros; if 8-digit treat as UPC-E and expand; pad to 12 digits
+    function normalizeUPC(upc) {
+      if (!upc) return '';
+      const digits = upc.replace(/\D/g, '');
+      if (!digits) return '';
+      let trimmed = digits.replace(/^0+/, '');
+      // If exactly 8 digits -> assume UPC-E, expand
+      if (trimmed.length === 8) {
+        trimmed = upcEtoUPCA(trimmed);
+      }
+      if (trimmed.length < 12) trimmed = trimmed.padStart(12, '0');
+      if (trimmed.length > 12) trimmed = trimmed.slice(-12); // keep rightmost 12 if weird
+      return trimmed;
+    }
+
+    // Expand UPC-E 8 -> UPC-A 12 (common rules)
+    function upcEtoUPCA(upce) {
+      if (!/^\d{8}$/.test(upce)) return upce;
+      const ns = upce[0];
+      const check = upce[7];
+      const mfr = upce.slice(1,6);
+      const last = mfr[4];
+      let upcAcore;
+      switch (last) {
+        case '0': case '1': case '2':
+          upcAcore = mfr.slice(0,2) + last + '0000' + mfr.slice(2,4);
+          break;
+        case '3':
+          upcAcore = mfr.slice(0,3) + '00000' + mfr[3];
+          break;
+        case '4':
+          upcAcore = mfr.slice(0,4) + '00000' + mfr[4];
+          break;
+        default:
+          upcAcore = mfr.slice(0,5) + '0000' + last;
+      }
+      return ns + upcAcore + check;
+    }
+
+    /************ Search & display ************/
     function searchProducts(query) {
-      if (!query || query.length < 2) return [];
+      if (!isLoaded || !query || query.length < 1) return [];
       const q = query.toLowerCase();
-      return liquorData.filter(p => {
-        return (
-          p.code.toLowerCase().includes(q) ||
-          p.brandName.toLowerCase().includes(q) ||
-          p.liquorType.toLowerCase().includes(q) ||
-          p.vendor.toLowerCase().includes(q) ||
-          (p.upc1 && p.upc1.includes(q)) ||
-          (p.upc2 && p.upc2.includes(q))
-        );
-      }).slice(0, 20);
+      // match against code, brand, type, vendor, upc1, upc2
+      return liquorData.filter(p =>
+        (p.liquorCode && p.liquorCode.toLowerCase().includes(q)) ||
+        (p.brandName && p.brandName.toLowerCase().includes(q)) ||
+        (p.liquorType && p.liquorType.toLowerCase().includes(q)) ||
+        (p.vendorName && p.vendorName.toLowerCase().includes(q)) ||
+        (p.upc1 && p.upc1.includes(q)) ||
+        (p.upc2 && p.upc2.includes(q))
+      ).slice(0, 30);
     }
 
-    function formatPrice(p) {
-      return '$' + p.toFixed(2);
-    }
-
-    function displayResults(products) {
-      if (products.length === 0) {
-        resultsDiv.innerHTML = `<div class="no-results"><h3>No results found</h3><p>Try a different search term</p></div>`;
+    function renderResults(results) {
+      if (!results || results.length === 0) {
+        resultsDiv.innerHTML = '<div class="no-results"><strong>No results</strong><div class="muted">Try a different code or name</div></div>';
         return;
       }
-      let html = '';
-      for (const p of products) {
-        html += `
-          <div class="product" tabindex="0" role="article" aria-label="${p.brandName} ${p.liquorType}">
-            <div class="product-name">${p.brandName}</div>
-            <div class="product-details">
-              <div class="detail-row"><strong>Type:</strong> ${p.liquorType}</div>
-              <div class="detail-row"><strong>Size:</strong> ${p.bottleSize} | <strong>Proof:</strong> ${p.proof}</div>
-              <div class="detail-row"><strong>Vendor:</strong> ${p.vendor}</div>
-            </div>
-            <div class="prices">
-              <div class="price-box">
-                <div class="price-label">On-Premise</div>
-                <div class="price-value">${formatPrice(p.onPrice)}</div>
-              </div>
-              <div class="price-box">
-                <div class="price-label">Off-Premise</div>
-                <div class="price-value">${formatPrice(p.offPrice)}</div>
-              </div>
-              <div class="price-box">
-                <div class="price-label">Shelf Price</div>
-                <div class="price-value">${formatPrice(p.shelfPrice)}</div>
-              </div>
-            </div>
-            <div class="codes">Code: ${p.code} | UPC1: ${p.upc1} | UPC2: ${p.upc2}</div>
+      const html = results.map(r => `
+        <div class="product">
+          <div class="product-name">${escapeHtml(r.brandName)}</div>
+          <div class="detail-row"><strong>Type:</strong> ${escapeHtml(r.liquorType)}</div>
+          <div class="detail-row"><strong>Size / Proof:</strong> ${escapeHtml(r.bottleSize)} | ${escapeHtml(r.proof)}</div>
+          <div class="detail-row"><strong>Vendor:</strong> ${escapeHtml(r.vendorName)}</div>
+          <div class="prices">
+            <div class="price-box"><div class="price-label">On-Premise</div><div class="price-value">${formatPrice(r.onPremPrice)}</div></div>
+            <div class="price-box"><div class="price-label">Off-Premise</div><div class="price-value">${formatPrice(r.offPremPrice)}</div></div>
+            <div class="price-box"><div class="price-label">Shelf</div><div class="price-value">${formatPrice(r.shelfPrice)}</div></div>
           </div>
-        `;
-      }
+          <div class="muted" style="margin-top:8px">Code: ${escapeHtml(r.liquorCode)} | UPC1: ${escapeHtml(r.upc1)} ${r.upc2 ? '| UPC2: ' + escapeHtml(r.upc2) : ''}</div>
+        </div>
+      `).join('');
       resultsDiv.innerHTML = html;
     }
 
-    function upcEtoUPC_A(upce) {
-      if (!/^\d{8}$/.test(upce)) return upce;
-      const numSystem = upce[0];
-      const checkDigit = upce[7];
-      const code = upce.slice(1, 7);
-      let result;
-      switch (code[5]) {
-        case '0':
-        case '1':
-        case '2':
-          result = code.slice(0, 2) + code[5] + '0000' + code.slice(2, 5);
-          break;
-        case '3':
-          result = code.slice(0, 3) + '00000' + code[4];
-          break;
-        case '4':
-          result = code.slice(0, 4) + '00000' + code[4];
-          break;
-        default:
-          result = code.slice(0, 5) + '0000' + code[5];
-      }
-      return numSystem + result + checkDigit;
+    function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function formatPrice(n){ return '$' + (typeof n === 'number' ? n.toFixed(2) : '0.00'); }
+
+    /************ Saved scans logic ************/
+    function saveScanEntry(query, results) {
+      const entry = { query, results: results.slice(0,10), ts: new Date().toISOString() };
+      savedScans.unshift(entry);
+      renderSavedList();
     }
 
-    function openScanner() {
-      scanBtn.disabled = true;
-      statusDiv.style.display = 'none';
-      scannerContainer.style.display = 'flex';
-      scannerContainer.setAttribute('aria-hidden', 'false');
+    function renderSavedList() {
+      if (savedScans.length === 0) {
+        savedListDiv.innerHTML = '<div class="muted">No saved scans yet.</div>';
+        return;
+      }
+      savedListDiv.innerHTML = savedScans.map((s, idx) => `
+        <div class="saved-item">
+          <div class="saved-meta">#${savedScans.length - idx} • ${new Date(s.ts).toLocaleString()}</div>
+          <div><strong>Query:</strong> ${escapeHtml(s.query)}</div>
+          <div class="muted" style="margin-top:6px"><strong>Hits:</strong> ${s.results.length}</div>
+        </div>
+      `).join('');
+    }
 
-      html5QrcodeScanner = new Html5Qrcode("scanner");
+    clearSavedBtn.addEventListener('click', () => {
+      if (!confirm('Clear all saved scans?')) return;
+      savedScans = [];
+      renderSavedList();
+    });
+
+    downloadSavedBtn.addEventListener('click', () => {
+      if (savedScans.length === 0) {
+        alert('No saved scans to download.');
+        return;
+      }
+      const rows = [['timestamp','query','hits','first_hit_name','first_hit_upc']];
+      for (const s of savedScans) {
+        rows.push([s.ts, s.query, s.results.length, s.results[0]?.brandName || '', s.results[0]?.upc1 || '']);
+      }
+      const csv = rows.map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'saved_scans.csv'; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    /************ Handheld scanner (keyboard) handling ************/
+    // The typical handheld scanner sends digits then an Enter key.
+    // We want: on Enter (when continuous mode active) -> save current results and clear the input.
+    searchBox.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        // If continuous mode: treat as "finalize this scan" event (save & clear)
+        if (continuousScanMode) {
+          e.preventDefault();
+          const q = searchBox.value.trim();
+          if (q.length === 0) {
+            // nothing to do
+            setTimeout(()=>{ searchBox.value = ''; searchBox.focus(); }, 10);
+            return;
+          }
+          // Perform search (input event handler would have run already, but we compute just in case)
+          const results = searchProducts(q);
+          renderResults(results);
+          // Save and clear after a tiny delay so user sees immediate results
+          setTimeout(() => {
+            saveScanEntry(q, results);
+            searchBox.value = '';
+            searchBox.focus();
+          }, 60);
+        }
+        // else if not continuous, Enter can be left to normal flow (we still prevent default to avoid form submits)
+      }
+    });
+
+    // Also handle direct paste / input: update results live
+    searchBox.addEventListener('input', (e) => {
+      const q = searchBox.value.trim();
+      if (!q) { resultsDiv.innerHTML = ''; return; }
+      // If short, we allow search with length >=1 so handheld scans (short codes) show immediately
+      const results = searchProducts(q);
+      renderResults(results);
+    });
+
+    /************ Camera scanner (html5-qrcode) ************/
+    scanBtn.addEventListener('click', openScanner);
+    closeScannerBtn.addEventListener('click', closeScanner);
+
+    async function openScanner() {
+      // open overlay and start scanner
+      scanBtn.disabled = true;
+      scannerContainer.style.display = 'flex';
+      scannerContainer.setAttribute('aria-hidden','false');
+      statusDiv.textContent = 'Starting camera…';
+
+      html5QrcodeScanner = new Html5Qrcode(/* element id */ "scanner", /* verbose= */ false);
 
       const config = {
         fps: 15,
-        qrbox: { width: 300, height: 300 },
+        qrbox: { width: 300, height: 300 }, // square box for better orientation tolerance
         experimentalFeatures: { useBarCodeDetectorIfSupported: true },
         formatsToSupport: [
           Html5QrcodeSupportedFormats.UPC_A,
@@ -388,52 +378,67 @@
           Html5QrcodeSupportedFormats.CODE_39,
           Html5QrcodeSupportedFormats.CODE_128,
           Html5QrcodeSupportedFormats.ITF,
+          Html5QrcodeSupportedFormats.QR_CODE
         ],
       };
 
-      html5QrcodeScanner.start(
-        { facingMode: { exact: "environment" } },
-        config,
-        qrCodeMessage => {
-          statusDiv.style.display = 'block';
-          statusDiv.className = 'status success';
-          statusDiv.textContent = `Scanned: ${qrCodeMessage}`;
-
-          let finalCode = qrCodeMessage;
-          if (/^\d{8}$/.test(qrCodeMessage)) {
-            finalCode = upcEtoUPC_A(qrCodeMessage);
+      try {
+        await html5QrcodeScanner.start(
+          { facingMode: "environment" },
+          config,
+          (message) => {
+            // message is the scanned string
+            handleCameraScan(message);
+          },
+          (error) => {
+            // ignore frame errors
           }
-
-          if (continuousScanMode) {
-            // Search immediately on scan, then clear input for next scan
-            const results = searchProducts(finalCode);
-            displayResults(results);
-            searchBox.value = '';
-            searchBox.focus();
-          } else {
-            html5QrcodeScanner.stop().then(() => {
-              html5QrcodeScanner.clear();
-              html5QrcodeScanner = null;
-              scannerContainer.style.display = 'none';
-              scannerContainer.setAttribute('aria-hidden', 'true');
-              scanBtn.disabled = false;
-
-              searchBox.value = finalCode;
-              searchBox.dispatchEvent(new Event('input'));
-              searchBox.focus();
-            });
-          }
-        },
-        errorMessage => {
-          // Ignore errors silently
-        }
-      ).catch(err => {
-        statusDiv.style.display = 'block';
-        statusDiv.className = 'status error';
-        statusDiv.textContent = `Scanner error: ${err}`;
-        scanBtn.disabled = false;
+        );
+        statusDiv.textContent = 'Camera ready — point at a barcode.';
+      } catch (err) {
+        statusDiv.textContent = 'Camera start failed: ' + err;
         scannerContainer.style.display = 'none';
-      });
+        scannerContainer.setAttribute('aria-hidden','true');
+        scanBtn.disabled = false;
+      }
+    }
+
+    function handleCameraScan(scanned) {
+      // Normalize UPC-E -> UPC-A if needed, then run search
+      let final = scanned.replace(/\D/g,'');
+      if (/^\d{8}$/.test(final)) final = upcEtoUPCA(final);
+      // If final shorter than 12, pad to 12 for matching
+      if (final.length < 12) final = final.padStart(12,'0');
+
+      // If user uses continuous mode: we emulate the handheld scanner Enter:
+      const results = searchProducts(final);
+      renderResults(results);
+
+      if (continuousScanMode) {
+        // Save & clear exactly like handheld Enter would
+        setTimeout(() => {
+          saveScanEntry(final, results);
+          // Clear input to prep for next scan
+          searchBox.value = '';
+          searchBox.focus();
+        }, 60);
+        // Keep camera open (continuous)
+      } else {
+        // Single-scan: stop scanner, put value into search box, and close overlay
+        html5QrcodeScanner.stop().then(() => {
+          html5QrcodeScanner.clear();
+          html5QrcodeScanner = null;
+          scannerContainer.style.display = 'none';
+          scannerContainer.setAttribute('aria-hidden','true');
+          scanBtn.disabled = false;
+          // Put the scanned code into the input and run the input event
+          searchBox.value = final;
+          searchBox.dispatchEvent(new Event('input'));
+          searchBox.focus();
+        }).catch(err => {
+          console.warn('Stop scanner error', err);
+        });
+      }
     }
 
     function closeScanner() {
@@ -441,40 +446,63 @@
         html5QrcodeScanner.stop().then(() => {
           html5QrcodeScanner.clear();
           html5QrcodeScanner = null;
-          scannerContainer.style.display = 'none';
-          scannerContainer.setAttribute('aria-hidden', 'true');
-          scanBtn.disabled = false;
-          statusDiv.style.display = 'none';
-        });
+        }).catch(()=>{ /* ignore */ });
       }
+      scannerContainer.style.display = 'none';
+      scannerContainer.setAttribute('aria-hidden','true');
+      scanBtn.disabled = false;
+      searchBox.focus();
     }
 
-    scanBtn.addEventListener('click', openScanner);
-    closeScannerBtn.addEventListener('click', closeScanner);
-
+    /************ Toggle continuous mode ************/
     toggleScanModeBtn.addEventListener('click', () => {
       continuousScanMode = !continuousScanMode;
-      toggleScanModeBtn.classList.toggle('active');
+      toggleScanModeBtn.classList.toggle('active', continuousScanMode);
       toggleScanModeBtn.textContent = continuousScanMode ? 'Toggle Scan Mode: Continuous Scan' : 'Toggle Scan Mode: Single Scan';
-      toggleScanModeBtn.setAttribute('aria-pressed', continuousScanMode.toString());
-      statusDiv.style.display = 'none';
+      toggleScanModeBtn.setAttribute('aria-pressed', String(continuousScanMode));
+      // Reset UI state
       resultsDiv.innerHTML = '';
+      savedListDiv.innerHTML = '';
+      savedScans = [];
       searchBox.value = '';
       searchBox.focus();
     });
 
-    searchBox.addEventListener('input', (e) => {
-      if (!isLoaded) return;
-      const query = e.target.value.trim();
-      if (query.length >= 2) {
-        const results = searchProducts(query);
-        displayResults(results);
-      } else {
-        resultsDiv.innerHTML = '';
-      }
+    /************ Init ************/
+    window.addEventListener('load', () => {
+      loadData().then(() => {
+        renderSavedList();
+      });
+      searchBox.focus();
     });
 
-    window.addEventListener('load', loadData);
+    // Expose a tiny helper to emulate UPC-E conversion used above
+    function upcEtoUPCA(upce) {
+      return upcEtoUPCA_impl(upce);
+    }
+    // small internal wrapper (duplicate of earlier function for safety)
+    function upcEtoUPCA_impl(upce) {
+      if (!/^\d{8}$/.test(upce)) return upce;
+      const ns = upce[0];
+      const check = upce[7];
+      const m = upce.slice(1,6);
+      const last = m[4];
+      let core;
+      switch (last) {
+        case '0': case '1': case '2':
+          core = m.slice(0,2) + last + '0000' + m.slice(2,4);
+          break;
+        case '3':
+          core = m.slice(0,3) + '00000' + m[3];
+          break;
+        case '4':
+          core = m.slice(0,4) + '00000' + m[4];
+          break;
+        default:
+          core = m.slice(0,5) + '0000' + last;
+      }
+      return ns + core + check;
+    }
   </script>
 </body>
 </html>
