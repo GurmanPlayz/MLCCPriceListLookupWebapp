@@ -142,6 +142,7 @@
     padding: 40px;
     color: #666;
   }
+
   /* Scanner modal */
   #scannerContainer {
     display: none;
@@ -157,7 +158,7 @@
     position: relative;
     width: 320px;
     max-width: 90vw;
-    aspect-ratio: 3 / 1; /* wider for barcodes */
+    aspect-ratio: 3 / 1; /* wide rectangle */
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 0 12px #0f62fe;
@@ -183,6 +184,13 @@
     width: auto;
     padding: 10px 30px;
     font-weight: bold;
+  }
+  #scanTip {
+    color: white;
+    font-size: 14px;
+    margin-top: 10px;
+    text-align: center;
+    max-width: 320px;
   }
 </style>
 </head>
@@ -212,6 +220,7 @@
 <!-- Scanner Modal -->
 <div id="scannerContainer" role="dialog" aria-modal="true" aria-hidden="true">
   <div id="scanner"></div>
+  <div id="scanTip">Hold barcode about 6 inches away, align red line with barcode.</div>
   <button id="closeScannerBtn" aria-label="Close barcode scanner">✖ Close Scanner</button>
 </div>
 
@@ -358,7 +367,7 @@
     resultsDiv.innerHTML = html;
   }
 
-  // UPC-E to UPC-A converter (improved)
+  // UPC-E to UPC-A converter
   function upcEtoUPC_A(upce) {
     if (!/^\d{8}$/.test(upce)) return upce;
 
@@ -396,9 +405,8 @@
     html5QrcodeScanner = new Html5Qrcode("scanner");
 
     const config = {
-      fps: 15,
-      qrbox: { width: 320, height: 110 }, // Wide rectangle to match typical barcodes better
-      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+      fps: 10,
+      qrbox: { width: 320, height: 110 }, // wider rectangle for barcodes
       formatsToSupport: [
         Html5QrcodeSupportedFormats.UPC_A,
         Html5QrcodeSupportedFormats.UPC_E,
@@ -408,15 +416,13 @@
         Html5QrcodeSupportedFormats.ITF,
       ],
       aspectRatio: 1.5,
-      disableFlip: false,
     };
 
     html5QrcodeScanner.start(
-      { facingMode: { exact: "environment" } },
+      { facingMode: "environment" },
       config,
       qrCodeMessage => {
         const now = Date.now();
-        // Debounce scans to avoid multiple quick fires
         if (now - lastScanTime < 1500) return;
         lastScanTime = now;
 
@@ -441,7 +447,7 @@
         }).catch(console.warn);
       },
       errorMessage => {
-        // ignore decode errors for cleaner UX
+        // Silent on decode errors
       }
     ).catch(err => {
       statusDiv.style.display = 'block';
