@@ -1,440 +1,703 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🍷 Michigan Liquor Price Search</title>
-  <style>
-    /* (Styles unchanged, omitted for brevity; same as before) */
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>🍷 Michigan Liquor Price Search</title>
+
+<!-- iOS Web App Compatibility -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="MI Liquor Price" />
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f5f5f5;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: white;
+    padding: 20px 25px 40px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+
+  h1 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #666;
+    margin-bottom: 25px;
+  }
+
+  .search-section {
+    margin-bottom: 30px;
+  }
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  input[type="text"], select {
+    flex: 1 1 150px;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    box-sizing: border-box;
+    min-width: 140px;
+  }
+
+  input[type="text"]:focus, select:focus {
+    border-color: #007bff;
+    outline: none;
+  }
+
+  button.clear-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    display: none;
+    margin-bottom: 15px;
+  }
+
+  button.clear-btn:hover {
+    background: #b02a37;
+  }
+
+  .status {
+    padding: 10px;
+    margin: 10px 0 20px;
+    border-radius: 5px;
+    display: none;
+  }
+
+  .status.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  .status.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+
+  .results {
+    margin-top: 10px;
+  }
+
+  .product {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    padding: 15px;
+    background: white;
+    cursor: pointer;
+  }
+
+  .product:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+  }
+
+  .product-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #007bff;
+    margin-bottom: 10px;
+  }
+
+  .product-details {
+    margin-bottom: 15px;
+  }
+
+  .detail-row {
+    margin-bottom: 5px;
+    font-size: 14px;
+  }
+
+  .prices {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .price-box {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    flex: 1 1 120px;
+    min-width: 120px;
+  }
+
+  .price-label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 5px;
+  }
+
+  .price-value {
+    font-size: 16px;
+    font-weight: bold;
+    color: #007bff;
+  }
+
+  .codes {
+    font-size: 12px;
+    color: #666;
+    margin-top: 10px;
+  }
+
+  .no-results {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+  }
+
+  /* Modal styles */
+  #modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #modal-content {
+    background: white;
+    margin: 50px auto;
+    padding: 20px 30px;
+    border-radius: 8px;
+    max-width: 600px;
+    box-sizing: border-box;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    position: relative;
+  }
+
+  #modal-close {
+    position: absolute;
+    right: 15px; top: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+  }
+  #modal-close:hover {
+    color: #000;
+  }
+
+  #modal-fav-btn {
+    cursor: pointer;
+    font-size: 28px;
+    color: #dc3545;
+    background: none;
+    border: none;
+    float: right;
+    margin-top: -5px;
+  }
+  #modal-fav-btn.favorited {
+    color: #e0245e;
+  }
+
+  #modal-body p {
+    margin: 8px 0;
+    font-size: 15px;
+  }
+
+  /* iOS touch adjustments */
+  button, select, input[type="text"] {
+    -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+    touch-action: manipulation;
+  }
+
+  /* Larger tap targets on touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    .product {
+      padding: 20px;
+    }
+    .price-box {
+      min-width: 140px;
+    }
+    .filters {
+      gap: 15px;
+    }
+  }
+</style>
 </head>
 <body>
   <div class="container">
     <h1>🍷 Michigan Liquor Price Search</h1>
     <p class="subtitle">Search the Michigan Liquor Control Commission price database</p>
-    
+
     <div class="search-section">
-      <div class="filters">
+      <div class="filters" role="search" aria-label="Search and filter products">
         <input
           type="text"
           id="searchBox"
           placeholder="Search by item code, UPC #1, UPC #2, or item name..."
           autocomplete="off"
           spellcheck="false"
+          aria-label="Search input"
         />
-        <select id="filterType" title="Filter by Liquor Type">
+        <select id="filterType" aria-label="Filter by liquor type" title="Filter by Liquor Type">
           <option value="">All Types</option>
         </select>
-        <select id="filterProof" title="Filter by Proof Range">
+        <select id="filterProof" aria-label="Filter by proof range" title="Filter by Proof Range">
           <option value="">All Proofs</option>
           <option value="low">&lt; 80</option>
           <option value="medium">80 - 100</option>
           <option value="high">&gt; 100</option>
         </select>
-        <select id="filterPrice" title="Filter by On-Premise Price">
+        <select id="filterPrice" aria-label="Filter by price range" title="Filter by On-Premise Price">
           <option value="">All Prices</option>
           <option value="low">&lt; $10</option>
           <option value="medium">$10 - $25</option>
           <option value="high">&gt; $25</option>
         </select>
       </div>
-      <button class="clear-btn" title="Clear Search & Filters" aria-label="Clear Search & Filters" style="display:none;">✕</button>
-      <div id="status" class="status"></div>
+      <button class="clear-btn" id="clearBtn" title="Clear search and filters" aria-label="Clear search and filters">✕ Clear</button>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
     </div>
-    
-    <div id="results" class="results"></div>
+
+    <div id="results" class="results" aria-live="polite" aria-relevant="additions"></div>
   </div>
 
   <!-- Modal -->
-  <div id="productModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <div class="modal-content">
-      <button class="favorite-btn" id="modalFavBtn" title="Toggle Favorite" aria-label="Toggle Favorite">&#9825;</button>
-      <span class="close-btn" id="modalCloseBtn" title="Close">&times;</span>
+  <div id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1">
+    <div id="modal-content">
+      <button id="modal-close" aria-label="Close modal">&times;</button>
+      <button id="modal-fav-btn" aria-label="Toggle favorite">&#9825;</button>
       <h2 id="modalTitle"></h2>
-      <div id="modalBody"></div>
+      <div id="modal-body"></div>
     </div>
   </div>
 
-  <script>
-    const DATA_FILE = 'webprbk.txt';
-    let liquorData = [];
-    let filteredData = [];
-    let favorites = new Set();
-    let isLoaded = false;
+<script>
+  'use strict';
 
-    const modal = document.getElementById('productModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    const modalCloseBtn = document.getElementById('modalCloseBtn');
-    const modalFavBtn = document.getElementById('modalFavBtn');
+  const searchBox = document.getElementById('searchBox');
+  const filterType = document.getElementById('filterType');
+  const filterProof = document.getElementById('filterProof');
+  const filterPrice = document.getElementById('filterPrice');
+  const clearBtn = document.getElementById('clearBtn');
+  const statusEl = document.getElementById('status');
+  const resultsEl = document.getElementById('results');
 
-    const searchBox = document.getElementById('searchBox');
-    const filterType = document.getElementById('filterType');
-    const filterProof = document.getElementById('filterProof');
-    const filterPrice = document.getElementById('filterPrice');
-    const clearBtn = document.querySelector('.clear-btn');
-    const statusEl = document.getElementById('status');
-    const resultsEl = document.getElementById('results');
+  const modal = document.getElementById('modal');
+  const modalCloseBtn = document.getElementById('modal-close');
+  const modalFavBtn = document.getElementById('modal-fav-btn');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalBody = document.getElementById('modal-body');
 
-    // Helper: remove leading zeros from item codes
-    function trimLeadingZeros(str) {
-      return str.replace(/^0+/, '') || '0';
-    }
+  let liquorData = [];
+  let filteredData = [];
+  let isLoaded = false;
 
-    // Helper: format UPC to 12 digits by removing first two zeros if present
-    function formatUPC(upc) {
-      if (!upc) return '';
-      // Remove all non-digits first to be safe
-      let digits = upc.replace(/\D/g, '');
-      if (digits.length === 14 && digits.startsWith('00')) {
-        digits = digits.slice(2);
+  // Escape HTML helper
+  function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/[&<>"']/g, function (m) {
+      switch (m) {
+        case '&': return '&amp;';
+        case '<': return '&lt;';
+        case '>': return '&gt;';
+        case '"': return '&quot;';
+        case "'": return '&#39;';
+        default: return m;
       }
-      // If longer than 12, truncate left, if shorter, pad left zeros
-      if (digits.length > 12) digits = digits.slice(-12);
-      if (digits.length < 12) digits = digits.padStart(12, '0');
-      return digits;
+    });
+  }
+
+  // Clean item code: remove leading zeros
+  function cleanItemCode(code) {
+    return code.replace(/^0+/, '') || '0';
+  }
+
+  // Clean UPC: remove first two leading zeros if present, pad to 12 digits
+  function cleanUPC(upc) {
+    if (!upc) return '';
+    if (upc.startsWith('00')) {
+      upc = upc.slice(2);
     }
-
-    // Format price string from raw data: fix double dots and leading zeros
-    function formatPrice(str) {
-      if (!str || str.length < 3) return '';
-      // Remove any unexpected extra dots
-      let clean = str.replace(/\.{2,}/g, '.').replace(/^0+/, '');
-      // Add decimal point two digits from right
-      let dollars = clean.slice(0, -2) || '0';
-      let cents = clean.slice(-2);
-      // Remove leading zeros in dollars but keep at least '0'
-      dollars = dollars.replace(/^0+/, '') || '0';
-      return `$${dollars}.${cents}`;
+    if (upc.length < 12) {
+      upc = upc.padStart(12, '0');
     }
+    return upc;
+  }
 
-    function formatProof(str) {
-      if (!str) return '';
-      if (str.includes('.')) return str;
-      let num = parseInt(str, 10);
-      if (isNaN(num)) return str;
-      return (num / 10).toFixed(1);
+  // Fix price formatting (remove extra dots, 2 decimals)
+  function fixPriceFormatting(priceStr) {
+    if (!priceStr) return '';
+    priceStr = priceStr.replace(/\.{2,}/g, '.'); // multiple dots -> one
+    let parts = priceStr.split('.');
+    if (parts.length > 2) {
+      priceStr = parts[0] + '.' + parts.slice(1).join('');
     }
-
-    function formatDate(str) {
-      if (!str || str.length !== 8) return str;
-      let mm = str.slice(0, 2);
-      let dd = str.slice(2, 4);
-      let yy = str.slice(4, 6);
-      let yyyy = '20' + yy;
-      return `${mm}/${dd}/${yyyy}`;
-    }
-
-    function escapeHtml(text) {
-      if (!text) return '';
-      return text.replace(/[&<>"']/g, m => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-      })[m]);
-    }
-
-    function loadFavorites() {
-      const favs = localStorage.getItem('miLiquorFavorites');
-      if (favs) {
-        favorites = new Set(JSON.parse(favs));
-      }
-    }
-
-    function saveFavorites() {
-      localStorage.setItem('miLiquorFavorites', JSON.stringify(Array.from(favorites)));
-    }
-
-    function toggleFavorite(code) {
-      if (favorites.has(code)) favorites.delete(code);
-      else favorites.add(code);
-      saveFavorites();
-    }
-
-    function isFavorite(code) {
-      return favorites.has(code);
-    }
-
-    async function loadData() {
-      setStatus('Loading data, please wait...', '');
-      disableInputs(true);
-
-      try {
-        const res = await fetch(DATA_FILE);
-        if (!res.ok) throw new Error('Failed to load data file.');
-
-        const text = await res.text();
-        const lines = text.split('\n').filter(line => line.length >= 194);
-        liquorData = lines.map(line => {
-          let p = parseLine(line);
-          // Remove leading zeros in liquorCode:
-          p.liquorCode = trimLeadingZeros(p.liquorCode);
-          // Format UPCs to 12-digit without first two zeros
-          p.upc1 = formatUPC(p.upc1);
-          p.upc2 = formatUPC(p.upc2);
-          return p;
-        });
-        isLoaded = true;
-        loadFavorites();
-
-        populateTypeFilter();
-        setStatus(`✅ Loaded ${liquorData.length} products. You can now search!`, 'success');
-        disableInputs(false);
-        searchBox.focus();
-        filterAndDisplay();
-      } catch (e) {
-        setStatus('❌ Error loading data: ' + e.message, 'error');
-        disableInputs(false);
-      }
-    }
-
-    function disableInputs(disable) {
-      searchBox.disabled = disable;
-      filterType.disabled = disable;
-      filterProof.disabled = disable;
-      filterPrice.disabled = disable;
-      clearBtn.style.display = disable ? 'none' : clearBtn.style.display;
-    }
-
-    function setStatus(msg, type) {
-      statusEl.textContent = msg;
-      statusEl.style.display = msg ? 'block' : 'none';
-      statusEl.className = 'status ' + (type || '');
-    }
-
-    function populateTypeFilter() {
-      const types = new Set(liquorData.map(p => p.liquorType).filter(t => t));
-      const sorted = Array.from(types).sort((a,b) => a.localeCompare(b));
-      filterType.innerHTML = '<option value="">All Types</option>' + 
-        sorted.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
-    }
-
-    function filterAndDisplay() {
-      if (!isLoaded) return;
-
-      let q = searchBox.value.trim().toLowerCase();
-      const typeFilter = filterType.value;
-      const proofFilter = filterProof.value;
-      const priceFilter = filterPrice.value;
-
-      filteredData = liquorData.filter(p => {
-        let searchMatch = (
-          p.liquorCode.toLowerCase().includes(q) ||
-          p.upc1.toLowerCase().includes(q) ||
-          p.upc2.toLowerCase().includes(q) ||
-          p.brandName.toLowerCase().includes(q) ||
-          p.adaName.toLowerCase().includes(q)
-        );
-
-        if (q.length > 0 && !searchMatch) return false;
-        if (typeFilter && p.liquorType !== typeFilter) return false;
-
-        const proofNum = parseFloat(formatProof(p.proof));
-        if (proofFilter === 'low' && proofNum >= 80) return false;
-        if (proofFilter === 'medium' && (proofNum < 80 || proofNum > 100)) return false;
-        if (proofFilter === 'high' && proofNum <= 100) return false;
-
-        const priceNum = parseFloat(formatPrice(p.onPremPrice).replace('$', '')) || 0;
-        if (priceFilter === 'low' && priceNum >= 10) return false;
-        if (priceFilter === 'medium' && (priceNum < 10 || priceNum > 25)) return false;
-        if (priceFilter === 'high' && priceNum <= 25) return false;
-
-        return true;
-      });
-
-      filteredData.sort((a, b) => a.brandName.localeCompare(b.brandName));
-      displayResults(filteredData);
-      toggleClearButton();
-    }
-
-    function toggleClearButton() {
-      if (
-        searchBox.value.trim() !== '' ||
-        filterType.value !== '' ||
-        filterProof.value !== '' ||
-        filterPrice.value !== ''
-      ) {
-        clearBtn.style.display = 'block';
+    if (!/\.\d{2}$/.test(priceStr)) {
+      if (priceStr.includes('.')) {
+        let [intPart, decPart] = priceStr.split('.');
+        decPart = (decPart + '00').slice(0, 2);
+        priceStr = intPart + '.' + decPart;
       } else {
-        clearBtn.style.display = 'none';
+        priceStr += '.00';
       }
     }
+    return priceStr;
+  }
 
-    function displayResults(products) {
-      if (products.length === 0) {
-        resultsEl.innerHTML = `<div class="no-results">
-          <h3>No results found</h3>
-          <p>Please try different search terms or filters.</p>
-        </div>`;
-        return;
-      }
+  // Format proof - keep one decimal (some data might have spaces)
+  function formatProof(proofStr) {
+    const p = parseFloat(proofStr);
+    return isNaN(p) ? '' : p.toFixed(1);
+  }
 
-      let html = `<p><strong>${products.length} result${products.length !== 1 ? 's' : ''} found.</strong></p>`;
+  // Format price string for display, prefix $
+  function formatPrice(priceStr) {
+    if (!priceStr) return '';
+    return '$' + priceStr;
+  }
 
-      for (const p of products) {
-        html += `
-          <div class="product" tabindex="0" data-code="${p.liquorCode}">
-            <div class="product-name">${escapeHtml(p.brandName)}</div>
-            <div class="product-details">
-              <div class="detail-row"><strong>Type:</strong> ${escapeHtml(p.liquorType)}</div>
-              <div class="detail-row"><strong>Size:</strong> ${escapeHtml(p.bottleSize)} | <strong>Proof:</strong> ${formatProof(p.proof)}</div>
-              <div class="detail-row"><strong>Vendor:</strong> ${escapeHtml(p.vendorName)}</div>
-            </div>
-            <div class="prices">
-              <div class="price-box">
-                <div class="price-label">On-Premise</div>
-                <div class="price-value">${formatPrice(p.onPremPrice)}</div>
-              </div>
-              <div class="price-box">
-                <div class="price-label">Off-Premise</div>
-                <div class="price-value">${formatPrice(p.offPremPrice)}</div>
-              </div>
-              <div class="price-box">
-                <div class="price-label">Shelf Price</div>
-                <div class="price-value">${formatPrice(p.shelfPrice)}</div>
-              </div>
-            </div>
-            <div class="codes">Code: ${escapeHtml(p.liquorCode)}${p.upc1 ? ' | UPC1: ' + escapeHtml(p.upc1) : ''}${p.upc2 ? ' | UPC2: ' + escapeHtml(p.upc2) : ''}</div>
+  // Parse one line from .txt file into object with cleaned fields
+  function parseLine(line) {
+    return {
+      liquorCode: cleanItemCode(line.substring(0, 5).trim()),
+      brandName: line.substring(5, 37).trim(),
+      adaNumber: line.substring(37, 40).trim(),
+      adaName: line.substring(40, 65).trim(),
+      vendorName: line.substring(65, 90).trim(),
+      liquorType: line.substring(90, 110).trim(),
+      proof: line.substring(110, 115).trim(),
+      bottleSize: line.substring(115, 122).trim(),
+      packSize: line.substring(122, 125).trim(),
+      onPremPrice: fixPriceFormatting(line.substring(125, 136).trim()),
+      offPremPrice: fixPriceFormatting(line.substring(136, 147).trim()),
+      shelfPrice: fixPriceFormatting(line.substring(147, 158).trim()),
+      upc1: cleanUPC(line.substring(158, 172).trim()),
+      upc2: cleanUPC(line.substring(172, 186).trim()),
+      effectiveDate: line.substring(186, 194).trim(),
+    };
+  }
+
+  // Load data from URL and parse
+  async function loadData() {
+    showStatus('Loading data from Michigan...', 'info');
+    try {
+      const response = await fetch('https://documents.apps.lara.state.mi.us/mlcc/webprbk.txt');
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const text = await response.text();
+      parseData(text);
+      showStatus(`✅ Loaded ${liquorData.length} products.`, 'success');
+      isLoaded = true;
+      populateFilterType();
+      filterAndDisplay();
+    } catch (e) {
+      showStatus('❌ Failed to load live data. Please try again later.', 'error');
+      console.error('Load error:', e);
+    }
+  }
+
+  // Parse all lines into liquorData array
+  function parseData(txt) {
+    const lines = txt.split('\n');
+    liquorData = [];
+    for (const line of lines) {
+      if (line.trim().length < 190) continue;
+      const p = parseLine(line);
+      liquorData.push(p);
+    }
+  }
+
+  // Show status message
+  function showStatus(msg, type) {
+    statusEl.style.display = 'block';
+    statusEl.textContent = msg;
+    statusEl.className = 'status';
+    if (type === 'success') statusEl.classList.add('success');
+    else if (type === 'error') statusEl.classList.add('error');
+  }
+
+  // Populate liquor type filter options dynamically
+  function populateFilterType() {
+    const types = Array.from(new Set(liquorData.map(p => p.liquorType).filter(t => t))).sort();
+    filterType.innerHTML = '<option value="">All Types</option>';
+    for (const t of types) {
+      filterType.innerHTML += `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`;
+    }
+  }
+
+  // Display products list
+  function displayResults(products) {
+    if (!products.length) {
+      resultsEl.innerHTML = '<div class="no-results"><h3>No results found</h3><p>Try a different search term or filter.</p></div>';
+      return;
+    }
+    let html = `<p><strong>${products.length} product${products.length > 1 ? 's' : ''} found.</strong></p>`;
+    for (const p of products) {
+      html += `
+      <div class="product" tabindex="0" data-code="${p.liquorCode}" role="button" aria-pressed="false" aria-label="View details for ${escapeHtml(p.brandName)}">
+        <div class="product-name">${escapeHtml(p.brandName)}</div>
+        <div class="product-details">
+          <div class="detail-row"><strong>Type:</strong> ${escapeHtml(p.liquorType)}</div>
+          <div class="detail-row"><strong>Size:</strong> ${escapeHtml(p.bottleSize)} | <strong>Proof:</strong> ${formatProof(p.proof)}</div>
+          <div class="detail-row"><strong>Vendor:</strong> ${escapeHtml(p.vendorName)}</div>
+        </div>
+        <div class="prices">
+          <div class="price-box">
+            <div class="price-label">On-Premise</div>
+            <div class="price-value">${formatPrice(p.onPremPrice)}</div>
           </div>
-        `;
-      }
-
-      resultsEl.innerHTML = html;
-
-      document.querySelectorAll('.product').forEach(elem => {
-        elem.onclick = () => openModal(elem.getAttribute('data-code'));
-        elem.onkeydown = e => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            openModal(elem.getAttribute('data-code'));
-          }
-        };
-      });
+          <div class="price-box">
+            <div class="price-label">Off-Premise</div>
+            <div class="price-value">${formatPrice(p.offPremPrice)}</div>
+          </div>
+          <div class="price-box">
+            <div class="price-label">Shelf Price</div>
+            <div class="price-value">${formatPrice(p.shelfPrice)}</div>
+          </div>
+        </div>
+        <div class="codes">Code: ${escapeHtml(p.liquorCode)}${p.upc1 ? ' | UPC1: ' + escapeHtml(p.upc1) : ''}${p.upc2 ? ' | UPC2: ' + escapeHtml(p.upc2) : ''}</div>
+      </div>`;
     }
+    resultsEl.innerHTML = html;
 
-    function openModal(code) {
-      const p = liquorData.find(item => item.liquorCode === code);
-      if (!p) return;
-
-      modalTitle.textContent = p.brandName;
-      modalBody.innerHTML = `
-        <p><strong>Liquor Code:</strong> ${escapeHtml(p.liquorCode)}</p>
-        <p><strong>ADA Number:</strong> ${escapeHtml(p.adaNumber)}</p>
-        <p><strong>ADA Name:</strong> ${escapeHtml(p.adaName)}</p>
-        <p><strong>Vendor:</strong> ${escapeHtml(p.vendorName)}</p>
-        <p><strong>Liquor Type:</strong> ${escapeHtml(p.liquorType)}</p>
-        <p><strong>Proof:</strong> ${formatProof(p.proof)}</p>
-        <p><strong>Bottle Size:</strong> ${escapeHtml(p.bottleSize)}</p>
-        <p><strong>Pack Size:</strong> ${escapeHtml(p.packSize)}</p>
-        <p><strong>On-Premise Price:</strong> ${formatPrice(p.onPremPrice)}</p>
-        <p><strong>Off-Premise Price:</strong> ${formatPrice(p.offPremPrice)}</p>
-        <p><strong>Shelf Price:</strong> ${formatPrice(p.shelfPrice)}</p>
-        <p><strong>UPC Code 1:</strong> ${escapeHtml(p.upc1)}</p>
-        <p><strong>UPC Code 2:</strong> ${escapeHtml(p.upc2)}</p>
-        <p><strong>Effective Date:</strong> ${formatDate(p.effectiveDate)}</p>
-      `;
-
-      updateFavButton(code);
-      modal.style.display = 'block';
-      modalCloseBtn.focus();
-    }
-
-    function closeModal() {
-      modal.style.display = 'none';
-    }
-
-    function updateFavButton(code) {
-      if (isFavorite(code)) {
-        modalFavBtn.classList.add('favorited');
-        modalFavBtn.innerHTML = '&#9829;'; // filled heart
-      } else {
-        modalFavBtn.classList.remove('favorited');
-        modalFavBtn.innerHTML = '&#9825;'; // empty heart
-      }
-      modalFavBtn.dataset.code = code;
-    }
-
-    modalFavBtn.onclick = () => {
-      const code = modalFavBtn.dataset.code;
-      if (!code) return;
-      toggleFavorite(code);
-      updateFavButton(code);
-      filterAndDisplay();
-    };
-
-    modalCloseBtn.onclick = closeModal;
-    window.onclick = e => {
-      if (e.target === modal) closeModal();
-    };
-    window.onkeydown = e => {
-      if (e.key === 'Escape' && modal.style.display === 'block') {
-        closeModal();
-      }
-    };
-
-    function debounce(func, wait = 300) {
-      let timeout;
-      return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
+    // Add click & keyboard event listeners for modal open
+    document.querySelectorAll('.product').forEach(elem => {
+      elem.onclick = () => openModal(elem.getAttribute('data-code'));
+      elem.onkeydown = e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openModal(elem.getAttribute('data-code'));
+        }
       };
+    });
+  }
+
+  // Modal open: show product details
+  function openModal(code) {
+    const p = liquorData.find(item => item.liquorCode === code);
+    if (!p) return;
+    modalTitle.textContent = p.brandName;
+    modalBody.innerHTML = `
+      <p><strong>Item Code:</strong> ${escapeHtml(p.liquorCode)}</p>
+      <p><strong>ADA Number:</strong> ${escapeHtml(p.adaNumber)} — ${escapeHtml(p.adaName)}</p>
+      <p><strong>Vendor:</strong> ${escapeHtml(p.vendorName)}</p>
+      <p><strong>Type:</strong> ${escapeHtml(p.liquorType)}</p>
+      <p><strong>Proof:</strong> ${formatProof(p.proof)}</p>
+      <p><strong>Bottle Size:</strong> ${escapeHtml(p.bottleSize)}</p>
+      <p><strong>Pack Size:</strong> ${escapeHtml(p.packSize)}</p>
+      <p><strong>On-Premise Price:</strong> ${formatPrice(p.onPremPrice)}</p>
+      <p><strong>Off-Premise Price:</strong> ${formatPrice(p.offPremPrice)}</p>
+      <p><strong>Shelf Price:</strong> ${formatPrice(p.shelfPrice)}</p>
+      <p><strong>UPC #1:</strong> ${escapeHtml(p.upc1)}</p>
+      <p><strong>UPC #2:</strong> ${escapeHtml(p.upc2)}</p>
+      <p><strong>Effective Date:</strong> ${escapeHtml(p.effectiveDate)}</p>
+    `;
+    updateFavoriteButton(code);
+
+    modal.style.display = 'block';
+    modal.setAttribute('aria-hidden', 'false');
+    modalCloseBtn.focus();
+  }
+
+  // Modal close
+  function closeModal() {
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    searchBox.focus();
+  }
+
+  // Favorite management with localStorage
+  function getFavorites() {
+    try {
+      return JSON.parse(localStorage.getItem('miLiquorFavorites')) || [];
+    } catch {
+      return [];
     }
+  }
 
-    const onSearchChange = debounce(() => {
-      filterAndDisplay();
-    }, 350);
+  function saveFavorites(favs) {
+    localStorage.setItem('miLiquorFavorites', JSON.stringify(favs));
+  }
 
-    searchBox.addEventListener('input', () => {
-      onSearchChange();
-      toggleClearButton();
-    });
-    filterType.addEventListener('change', () => {
-      filterAndDisplay();
-      toggleClearButton();
-    });
-    filterProof.addEventListener('change', () => {
-      filterAndDisplay();
-      toggleClearButton();
-    });
-    filterPrice.addEventListener('change', () => {
-      filterAndDisplay();
-      toggleClearButton();
-    });
+  function isFavorited(code) {
+    const favs = getFavorites();
+    return favs.includes(code);
+  }
 
-    clearBtn.addEventListener('click', () => {
-      searchBox.value = '';
-      filterType.value = '';
-      filterProof.value = '';
-      filterPrice.value = '';
-      toggleClearButton();
-      filterAndDisplay();
-      searchBox.focus();
-    });
-
-    // Parses fixed width line from data file
-    function parseLine(line) {
-      return {
-        liquorCode: line.substring(0, 5).trim(),
-        brandName: line.substring(5, 37).trim(),
-        adaNumber: line.substring(37, 40).trim(),
-        adaName: line.substring(40, 65).trim(),
-        vendorName: line.substring(65, 90).trim(),
-        liquorType: line.substring(90, 110).trim(),
-        proof: line.substring(110, 115).trim(),
-        bottleSize: line.substring(115, 122).trim(),
-        packSize: line.substring(122, 125).trim(),
-        onPremPrice: line.substring(125, 136).trim(),
-        offPremPrice: line.substring(136, 147).trim(),
-        shelfPrice: line.substring(147, 158).trim(),
-        upc1: line.substring(158, 172).trim(),
-        upc2: line.substring(172, 186).trim(),
-        effectiveDate: line.substring(186, 194).trim(),
-      };
+  function toggleFavorite(code) {
+    let favs = getFavorites();
+    if (favs.includes(code)) {
+      favs = favs.filter(c => c !== code);
+    } else {
+      favs.push(code);
     }
+    saveFavorites(favs);
+    updateFavoriteButton(code);
+  }
 
-    loadData();
-  </script>
+  function updateFavoriteButton(code) {
+    if (isFavorited(code)) {
+      modalFavBtn.classList.add('favorited');
+      modalFavBtn.innerHTML = '&#9829;'; // solid heart
+      modalFavBtn.setAttribute('aria-label', 'Remove from favorites');
+    } else {
+      modalFavBtn.classList.remove('favorited');
+      modalFavBtn.innerHTML = '&#9825;'; // empty heart
+      modalFavBtn.setAttribute('aria-label', 'Add to favorites');
+    }
+  }
+
+  // Filter and display results based on search and filters
+  function filterAndDisplay() {
+    if (!isLoaded) return;
+
+    const q = searchBox.value.trim().toLowerCase();
+    const typeFilterVal = filterType.value;
+    const proofFilterVal = filterProof.value;
+    const priceFilterVal = filterPrice.value;
+
+    filteredData = liquorData.filter(p => {
+      // Search matching
+      const searchMatch = (
+        p.liquorCode.toLowerCase().includes(q) ||
+        p.upc1.toLowerCase().includes(q) ||
+        p.upc2.toLowerCase().includes(q) ||
+        p.brandName.toLowerCase().includes(q) ||
+        p.adaName.toLowerCase().includes(q)
+      );
+
+      if (q.length > 0 && !searchMatch) return false;
+
+      // Filter by type
+      if (typeFilterVal && p.liquorType !== typeFilterVal) return false;
+
+      // Filter by proof range
+      const proofNum = parseFloat(formatProof(p.proof));
+      if (proofFilterVal === 'low' && proofNum >= 80) return false;
+      if (proofFilterVal === 'medium' && (proofNum < 80 || proofNum > 100)) return false;
+      if (proofFilterVal === 'high' && proofNum <= 100) return false;
+
+      // Filter by price range (on-premise)
+      const priceNum = parseFloat(p.onPremPrice) || 0;
+      if (priceFilterVal === 'low' && priceNum >= 10) return false;
+      if (priceFilterVal === 'medium' && (priceNum < 10 || priceNum > 25)) return false;
+      if (priceFilterVal === 'high' && priceNum <= 25) return false;
+
+      return true;
+    });
+
+    filteredData.sort((a, b) => a.brandName.localeCompare(b.brandName));
+
+    displayResults(filteredData);
+    toggleClearButton();
+  }
+
+  // Show or hide clear button
+  function toggleClearButton() {
+    if (
+      searchBox.value.trim() !== '' ||
+      filterType.value !== '' ||
+      filterProof.value !== '' ||
+      filterPrice.value !== ''
+    ) {
+      clearBtn.style.display = 'inline-block';
+    } else {
+      clearBtn.style.display = 'none';
+    }
+  }
+
+  // Clear all filters and search
+  function clearAll() {
+    searchBox.value = '';
+    filterType.value = '';
+    filterProof.value = '';
+    filterPrice.value = '';
+    filterAndDisplay();
+    clearBtn.style.display = 'none';
+    searchBox.focus();
+  }
+
+  // Event listeners
+  searchBox.addEventListener('input', filterAndDisplay);
+  filterType.addEventListener('change', filterAndDisplay);
+  filterProof.addEventListener('change', filterAndDisplay);
+  filterPrice.addEventListener('change', filterAndDisplay);
+  clearBtn.addEventListener('click', clearAll);
+
+  modalCloseBtn.addEventListener('click', closeModal);
+  modalFavBtn.addEventListener('click', () => {
+    const code = modalTitle.getAttribute('data-code') || modalTitle.textContent;
+    toggleFavorite(code);
+  });
+
+  // Close modal on outside click
+  window.addEventListener('click', e => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+
+  // Close modal on Escape key
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modal.style.display === 'block') {
+      closeModal();
+    }
+  });
+
+  // Fix modal favorite code attribute when opening
+  function openModal(code) {
+    const p = liquorData.find(item => item.liquorCode === code);
+    if (!p) return;
+    modalTitle.textContent = p.brandName;
+    modalTitle.setAttribute('data-code', p.liquorCode);
+    modalBody.innerHTML = `
+      <p><strong>Item Code:</strong> ${escapeHtml(p.liquorCode)}</p>
+      <p><strong>ADA Number:</strong> ${escapeHtml(p.adaNumber)} — ${escapeHtml(p.adaName)}</p>
+      <p><strong>Vendor:</strong> ${escapeHtml(p.vendorName)}</p>
+      <p><strong>Type:</strong> ${escapeHtml(p.liquorType)}</p>
+      <p><strong>Proof:</strong> ${formatProof(p.proof)}</p>
+      <p><strong>Bottle Size:</strong> ${escapeHtml(p.bottleSize)}</p>
+      <p><strong>Pack Size:</strong> ${escapeHtml(p.packSize)}</p>
+      <p><strong>On-Premise Price:</strong> ${formatPrice(p.onPremPrice)}</p>
+      <p><strong>Off-Premise Price:</strong> ${formatPrice(p.offPremPrice)}</p>
+      <p><strong>Shelf Price:</strong> ${formatPrice(p.shelfPrice)}</p>
+      <p><strong>UPC #1:</strong> ${escapeHtml(p.upc1)}</p>
+      <p><strong>UPC #2:</strong> ${escapeHtml(p.upc2)}</p>
+      <p><strong>Effective Date:</strong> ${escapeHtml(p.effectiveDate)}</p>
+    `;
+    updateFavoriteButton(code);
+
+    modal.style.display = 'block';
+    modal.setAttribute('aria-hidden', 'false');
+    modalCloseBtn.focus();
+  }
+
+  // Initial load
+  loadData();
+</script>
 </body>
 </html>
