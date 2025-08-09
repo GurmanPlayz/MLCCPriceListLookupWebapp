@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>🍷 Michigan Liquor Price Search</title>
 <style>
-  /* Reset & base */
   body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -135,7 +134,6 @@
     color: #666;
   }
 
-  /* Scanner overlay */
   #scannerContainer {
     display: none;
     position: fixed;
@@ -149,7 +147,7 @@
   #scanner {
     width: 90vw;
     max-width: 600px;
-    aspect-ratio: 3 / 1.5;
+    aspect-ratio: 1 / 1;
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 0 20px #007bff;
@@ -168,25 +166,6 @@
     background: #dc3545;
     margin-top: 12px;
   }
-
-  /* Favorite button styles */
-  #modalFavBtn {
-    cursor: pointer;
-    font-size: 24px;
-    user-select: none;
-    background: none;
-    border: none;
-    color: #dc3545;
-    transition: transform 0.2s ease;
-  }
-  #modalFavBtn.favorited {
-    color: #e0245e;
-  }
-  #modalFavBtn:hover {
-    transform: scale(1.2);
-  }
-
-  /* Modal styles */
   #modal {
     display: none;
     position: fixed;
@@ -283,7 +262,6 @@
   <div id="results" class="results" aria-live="polite" aria-relevant="additions"></div>
 </div>
 
-<!-- Scanner overlay -->
 <div id="scannerContainer" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Barcode scanner">
   <div id="scanner"></div>
   <div id="scanResult" aria-live="assertive"></div>
@@ -292,21 +270,17 @@
   </div>
 </div>
 
-<!-- Modal for product details -->
 <div id="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div id="modalContent">
     <button id="modalCloseBtn" aria-label="Close product details">✖ Close</button>
     <h2 id="modalTitle"></h2>
     <div id="modalDetails"></div>
-    <button id="modalFavBtn" aria-label="Add to favorites">&#9825;</button>
   </div>
 </div>
 
-<!-- Html5-qrcode library -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <script>
-  // Globals
   let liquorData = [];
   let isLoaded = false;
   const searchBox = document.getElementById('searchBox');
@@ -320,11 +294,9 @@
   const modalTitle = document.getElementById('modalTitle');
   const modalDetails = document.getElementById('modalDetails');
   const modalCloseBtn = document.getElementById('modalCloseBtn');
-  const modalFavBtn = document.getElementById('modalFavBtn');
 
   let html5QrcodeScanner = null;
 
-  // Load data from local txt file
   async function loadData() {
     try {
       const response = await fetch('webprbk.txt');
@@ -339,12 +311,10 @@
     }
   }
 
-  // Parse fixed-width txt file into objects
   function parseData(txt) {
     const lines = txt.split('\n').filter(line => line.trim().length >= 194);
     const data = [];
     for (const line of lines) {
-      // fixed positions as per your spec (1-based indexing)
       const codeRaw = line.substring(0, 5);
       const code = codeRaw.replace(/^0+/, '') || '0';
       const name = line.substring(5, 37).trim();
@@ -360,11 +330,11 @@
       const shelfPriceRaw = line.substring(147, 158).trim();
       const upc1Raw = line.substring(158, 172).trim();
       const upc2Raw = line.substring(172, 186).trim();
-      // Convert prices: remove extra dots if any, parse float
+
       const onPrice = parsePrice(onPriceRaw);
       const offPrice = parsePrice(offPriceRaw);
       const shelfPrice = parsePrice(shelfPriceRaw);
-      // Normalize UPCs: remove leading zeros, make sure 12-digit
+
       const upc1 = normalizeUPC(upc1Raw);
       const upc2 = normalizeUPC(upc2Raw);
 
@@ -389,22 +359,16 @@
   }
 
   function parsePrice(priceStr) {
-    // Remove all non-digit or dot chars
     const cleaned = priceStr.replace(/[^0-9.]/g, '');
-    // Fix if contains two dots (e.g. "59..99")
     if ((cleaned.match(/\./g) || []).length > 1) {
-      // Replace first .. with single .
       return parseFloat(cleaned.replace('..', '.')) || 0;
     }
     return parseFloat(cleaned) || 0;
   }
 
-  // Normalize UPCs to 12-digit strings (remove leading zeros, pad if needed)
   function normalizeUPC(upc) {
     let cleaned = upc.replace(/^0+/, '');
-    // UPCs shorter than 12: pad with leading zeros
     if (cleaned.length === 8) {
-      // UPC-E: convert to UPC-A
       cleaned = upcEtoUPC_A(cleaned);
     }
     if (cleaned.length < 12) {
@@ -413,10 +377,9 @@
     return cleaned;
   }
 
-  // UPC-E to UPC-A conversion function (returns 12-digit UPC-A string)
   function upcEtoUPC_A(upcE) {
     const upc = upcE.padStart(8, '0');
-    if (!/^\d{8}$/.test(upc)) return upcE; // Not valid UPC-E
+    if (!/^\d{8}$/.test(upc)) return upcE;
 
     const numberSystem = upc[0];
     const checkDigit = upc[7];
@@ -443,7 +406,6 @@
     return numberSystem + upcA + checkDigit;
   }
 
-  // Search logic
   function searchProducts(query) {
     if (!query || query.length < 2) return [];
     const q = query.toLowerCase();
@@ -460,7 +422,6 @@
     }).slice(0, 30);
   }
 
-  // Display search results
   function displayResults(products) {
     if (!products.length) {
       resultsDiv.innerHTML = '<div class="no-results"><h3>No results found</h3><p>Try a different search term.</p></div>';
@@ -493,11 +454,8 @@
     `).join('');
     resultsDiv.innerHTML = html;
 
-    // Add click and keyboard event to open modal for each product
     document.querySelectorAll('.product').forEach(el => {
-      el.addEventListener('click', () => {
-        openModal(el.getAttribute('data-code'));
-      });
+      el.addEventListener('click', () => openModal(el.getAttribute('data-code')));
       el.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -507,13 +465,9 @@
     });
   }
 
-  // Format price to $xx.xx
   function formatPrice(price) {
     return '$' + price.toFixed(2);
   }
-
-  // Modal logic for product details and favorites
-  let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
 
   function openModal(code) {
     const product = liquorData.find(p => p.code === code);
@@ -534,8 +488,6 @@
       <div class="detail-row"><strong>ADA Name:</strong> ${product.adaName}</div>
     `;
 
-    updateFavoriteButton(code);
-
     modal.style.display = 'block';
     modal.setAttribute('aria-hidden', 'false');
     modalCloseBtn.focus();
@@ -547,46 +499,19 @@
     searchBox.focus();
   }
 
-  function updateFavoriteButton(code) {
-    if (favorites.includes(code)) {
-      modalFavBtn.classList.add('favorited');
-      modalFavBtn.innerHTML = '&#9829;'; // filled heart
-      modalFavBtn.setAttribute('aria-label', 'Remove from favorites');
-    } else {
-      modalFavBtn.classList.remove('favorited');
-      modalFavBtn.innerHTML = '&#9825;'; // empty heart
-      modalFavBtn.setAttribute('aria-label', 'Add to favorites');
-    }
-    modalFavBtn.dataset.code = code;
-  }
-
-  modalFavBtn.addEventListener('click', () => {
-    const code = modalFavBtn.dataset.code;
-    if (!code) return;
-    if (favorites.includes(code)) {
-      favorites = favorites.filter(c => c !== code);
-    } else {
-      favorites.push(code);
-    }
-    localStorage.setItem('favorites', JSON.stringify(favorites));
-    updateFavoriteButton(code);
-  });
-
   modalCloseBtn.addEventListener('click', closeModal);
   modal.addEventListener('click', e => {
     if (e.target === modal) closeModal();
   });
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && modal.style.display === 'block') {
-      closeModal();
-    }
-    if (e.key === 'Escape' && scannerContainer.style.display === 'flex') {
-      closeScanner();
+    if (e.key === 'Escape') {
+      if (modal.style.display === 'block') closeModal();
+      if (scannerContainer.style.display === 'flex') closeScanner();
     }
   });
 
-  // Scanner integration with html5-qrcode
+  // Barcode scanner logic
   scanBtn.addEventListener('click', openScanner);
   closeScannerBtn.addEventListener('click', closeScanner);
 
@@ -599,8 +524,10 @@
 
     const config = {
       fps: 15,
-      qrbox: { width: 300, height: 150 }, // wider for easier scan
-      supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+      qrbox: { width: 300, height: 300 }, // square box for better orientation tolerance
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true, // leverage native browser API if available
+      },
       formatsToSupport: [
         Html5QrcodeSupportedFormats.UPC_A,
         Html5QrcodeSupportedFormats.UPC_E,
@@ -608,7 +535,6 @@
         Html5QrcodeSupportedFormats.CODE_39,
         Html5QrcodeSupportedFormats.CODE_128,
         Html5QrcodeSupportedFormats.ITF,
-        Html5QrcodeSupportedFormats.QR_CODE
       ],
     };
 
@@ -618,6 +544,7 @@
       qrCodeMessage => {
         scanResult.textContent = `Scanned: ${qrCodeMessage}`;
         let finalCode = qrCodeMessage;
+        // Convert UPC-E to UPC-A for searching
         if (/^\d{8}$/.test(qrCodeMessage)) {
           finalCode = upcEtoUPC_A(qrCodeMessage);
         }
@@ -630,7 +557,7 @@
         }, 500);
       },
       errorMessage => {
-        // ignore scan failures
+        // Ignore scan failures, no UI spam
       }
     ).catch(err => {
       scanResult.textContent = 'Error starting camera: ' + err;
@@ -666,18 +593,11 @@
     }
   });
 
-  // Status messages helper
   function showStatus(msg, type) {
-    // Could add a status div if needed - currently disabled
     console.log(`[Status ${type}]: ${msg}`);
   }
 
-  // Format price helper (for completeness here)
-  function formatPrice(price) {
-    return '$' + price.toFixed(2);
-  }
-
-  // Auto load data on page load
+  // Load data on page load
   window.addEventListener('load', () => {
     loadData();
   });
