@@ -10,6 +10,8 @@
       margin: 0;
       padding: 20px;
       background-color: #f5f5f5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     
     .container {
@@ -19,6 +21,7 @@
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      position: relative;
     }
     
     h1 {
@@ -30,46 +33,49 @@
     .subtitle {
       text-align: center;
       color: #666;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
     }
     
     .search-section {
-      margin-bottom: 30px;
+      margin-bottom: 25px;
+    }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
     }
     
-    button {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 5px;
-      cursor: pointer;
+    select, input[type="text"] {
+      padding: 10px;
       font-size: 16px;
-      width: 100%;
-      margin-bottom: 15px;
-    }
-    
-    button:hover:not(:disabled) {
-      background: #0056b3;
-    }
-    
-    button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-    
-    input {
-      width: 100%;
-      padding: 12px;
+      border-radius: 5px;
       border: 2px solid #ddd;
-      border-radius: 5px;
-      font-size: 16px;
+      flex-grow: 1;
+      min-width: 150px;
       box-sizing: border-box;
     }
     
-    input:focus {
+    select:focus, input[type="text"]:focus {
       border-color: #007bff;
       outline: none;
+    }
+    
+    button.clear-btn {
+      position: absolute;
+      right: 30px;
+      top: 132px;
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #999;
+      user-select: none;
+    }
+    
+    button.clear-btn:hover {
+      color: #007bff;
     }
     
     .status {
@@ -111,6 +117,8 @@
       padding: 15px;
       background: white;
       transition: box-shadow 0.2s ease;
+      cursor: pointer;
+      position: relative;
     }
     
     .product:hover {
@@ -174,6 +182,94 @@
       padding: 40px;
       color: #666;
     }
+
+    /* Modal styles */
+    .modal {
+      display: none; 
+      position: fixed; 
+      z-index: 1000; 
+      left: 0; top: 0; width: 100%; height: 100%; 
+      overflow: auto; 
+      background-color: rgba(0,0,0,0.6);
+      padding-top: 60px;
+    }
+
+    .modal-content {
+      background-color: #fff;
+      margin: auto;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 600px;
+      position: relative;
+      box-shadow: 0 5px 15px rgba(0,0,0,.3);
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {opacity: 0; transform: translateY(-20px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+
+    .close-btn {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      position: absolute;
+      top: 10px;
+      right: 15px;
+    }
+
+    .close-btn:hover {
+      color: #000;
+    }
+
+    .favorite-btn {
+      position: absolute;
+      top: 10px;
+      left: 15px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 24px;
+      color: #ccc;
+      user-select: none;
+      transition: color 0.3s;
+    }
+    .favorite-btn.favorited {
+      color: #e74c3c;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      border: 4px solid #f3f3f3; 
+      border-top: 4px solid #007bff; 
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 10px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+
+    /* Mobile friendly tweaks */
+    @media (max-width: 480px) {
+      .filters {
+        flex-direction: column;
+      }
+      select, input[type="text"] {
+        min-width: 100%;
+      }
+      button.clear-btn {
+        top: 110px;
+        right: 15px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -182,31 +278,72 @@
     <p class="subtitle">Search the Michigan Liquor Control Commission price database</p>
     
     <div class="search-section">
-      <button id="loadBtn">Load Data</button>
-      <div id="status" class="status"></div>
-      
-      <input
-        type="text"
-        id="searchBox"
-        placeholder="Search by item code, UPC #1, UPC #2, or item name..."
-        disabled
-        autocomplete="off"
-        spellcheck="false"
-      />
-      
-      <div class="help-text">
-        <strong>Search Tips:</strong> Try "Grey Goose", "Bourbon", "Vodka", or codes like "00121"
+      <div class="filters">
+        <input
+          type="text"
+          id="searchBox"
+          placeholder="Search by item code, UPC #1, UPC #2, or item name..."
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <select id="filterType" title="Filter by Liquor Type">
+          <option value="">All Types</option>
+        </select>
+        <select id="filterProof" title="Filter by Proof Range">
+          <option value="">All Proofs</option>
+          <option value="low">&lt; 80</option>
+          <option value="medium">80 - 100</option>
+          <option value="high">&gt; 100</option>
+        </select>
+        <select id="filterPrice" title="Filter by On-Prem Price">
+          <option value="">All Prices</option>
+          <option value="low">&lt; $10</option>
+          <option value="medium">$10 - $25</option>
+          <option value="high">&gt; $25</option>
+        </select>
       </div>
+      <button class="clear-btn" title="Clear Search & Filters" aria-label="Clear Search & Filters" style="display:none;">✕</button>
+      <div id="status" class="status"></div>
     </div>
     
     <div id="results" class="results"></div>
   </div>
 
-  <script>
-    const DATA_FILE = 'webprbk.txt'; // Place the actual file here in your repo
-    let liquorData = [];
-    let isLoaded = false;
+  <!-- Modal -->
+  <div id="productModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-content">
+      <button class="favorite-btn" id="modalFavBtn" title="Toggle Favorite" aria-label="Toggle Favorite">&#9825;</button>
+      <span class="close-btn" id="modalCloseBtn" title="Close">&times;</span>
+      <h2 id="modalTitle"></h2>
+      <div id="modalBody"></div>
+    </div>
+  </div>
 
+  <script>
+    const DATA_FILE = 'webprbk.txt'; // Your data file location
+    let liquorData = [];
+    let filteredData = [];
+    let favorites = new Set();
+    let isLoaded = false;
+    let debounceTimer;
+
+    // Modal elements
+    const modal = document.getElementById('productModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
+    const modalFavBtn = document.getElementById('modalFavBtn');
+
+    // Elements
+    const searchBox = document.getElementById('searchBox');
+    const filterType = document.getElementById('filterType');
+    const filterProof = document.getElementById('filterProof');
+    const filterPrice = document.getElementById('filterPrice');
+    const clearBtn = document.querySelector('.clear-btn');
+    const statusEl = document.getElementById('status');
+    const resultsEl = document.getElementById('results');
+
+    // Parse fixed width line into object
     function parseLine(line) {
       return {
         liquorCode: line.substring(0, 5).trim(),
@@ -228,7 +365,6 @@
     }
 
     function formatPrice(str) {
-      // e.g. "000000762" means $7.62
       if (!str || str.length < 3) return '';
       let dollars = str.slice(0, -2).replace(/^0+/, '') || '0';
       let cents = str.slice(-2);
@@ -237,7 +373,7 @@
 
     function formatProof(str) {
       if (!str) return '';
-      if (str.includes('.')) return str; // Already formatted
+      if (str.includes('.')) return str;
       let num = parseInt(str, 10);
       if (isNaN(num)) return str;
       return (num / 10).toFixed(1);
@@ -252,9 +388,46 @@
       return `${mm}/${dd}/${yyyy}`;
     }
 
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/[&<>"']/g, m => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[m]);
+    }
+
+    // Load favorites from localStorage
+    function loadFavorites() {
+      const favs = localStorage.getItem('miLiquorFavorites');
+      if (favs) {
+        favorites = new Set(JSON.parse(favs));
+      }
+    }
+
+    // Save favorites to localStorage
+    function saveFavorites() {
+      localStorage.setItem('miLiquorFavorites', JSON.stringify(Array.from(favorites)));
+    }
+
+    // Toggle favorite for liquorCode
+    function toggleFavorite(code) {
+      if (favorites.has(code)) favorites.delete(code);
+      else favorites.add(code);
+      saveFavorites();
+    }
+
+    // Check if liquorCode is favorite
+    function isFavorite(code) {
+      return favorites.has(code);
+    }
+
+    // Load data on page load
     async function loadData() {
       setStatus('Loading data, please wait...', '');
-      document.getElementById('loadBtn').disabled = true;
+      disableInputs(true);
 
       try {
         const res = await fetch(DATA_FILE);
@@ -264,105 +437,272 @@
         const lines = text.split('\n').filter(line => line.length >= 194);
         liquorData = lines.map(parseLine);
         isLoaded = true;
+        loadFavorites();
 
+        populateTypeFilter();
         setStatus(`✅ Loaded ${liquorData.length} products. You can now search!`, 'success');
-        document.getElementById('searchBox').disabled = false;
-        document.getElementById('loadBtn').textContent = 'Reload Data';
-        document.getElementById('loadBtn').disabled = false;
-        document.getElementById('searchBox').focus();
-        clearResults();
+        disableInputs(false);
+        searchBox.focus();
+        filterAndDisplay();
       } catch (e) {
         setStatus('❌ Error loading data: ' + e.message, 'error');
-        document.getElementById('loadBtn').disabled = false;
+        disableInputs(false);
       }
     }
 
-    function setStatus(message, type) {
-      const statusEl = document.getElementById('status');
-      statusEl.textContent = message;
-      statusEl.style.display = 'block';
+    // Disable or enable inputs during loading
+    function disableInputs(disable) {
+      searchBox.disabled = disable;
+      filterType.disabled = disable;
+      filterProof.disabled = disable;
+      filterPrice.disabled = disable;
+      clearBtn.style.display = disable ? 'none' : clearBtn.style.display;
+    }
+
+    // Set status message
+    function setStatus(msg, type) {
+      statusEl.textContent = msg;
+      statusEl.style.display = msg ? 'block' : 'none';
       statusEl.className = 'status ' + (type || '');
     }
 
-    function clearResults() {
-      document.getElementById('results').innerHTML = '';
+    // Populate Liquor Type filter options dynamically from data
+    function populateTypeFilter() {
+      const types = new Set(liquorData.map(p => p.liquorType).filter(t => t));
+      const sorted = Array.from(types).sort((a,b) => a.localeCompare(b));
+      filterType.innerHTML = '<option value="">All Types</option>' + 
+        sorted.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
     }
 
-    function searchProducts(query) {
-      if (!query || query.length < 2) return [];
-      const q = query.toLowerCase();
+    // Filter and display products according to inputs
+    function filterAndDisplay() {
+      if (!isLoaded) return;
 
-      return liquorData.filter(p =>
-        p.liquorCode.toLowerCase().includes(q) ||
-        p.upc1.toLowerCase().includes(q) ||
-        p.upc2.toLowerCase().includes(q) ||
-        p.brandName.toLowerCase().includes(q) ||
-        p.adaName.toLowerCase().includes(q)
-      ).slice(0, 30); // limit results for performance
+      let q = searchBox.value.trim().toLowerCase();
+      const typeFilter = filterType.value;
+      const proofFilter = filterProof.value;
+      const priceFilter = filterPrice.value;
+
+      // Filter
+      filteredData = liquorData.filter(p => {
+        // Search term match
+        let searchMatch = (
+          p.liquorCode.toLowerCase().includes(q) ||
+          p.upc1.toLowerCase().includes(q) ||
+          p.upc2.toLowerCase().includes(q) ||
+          p.brandName.toLowerCase().includes(q) ||
+          p.adaName.toLowerCase().includes(q)
+        );
+
+        if (q.length > 0 && !searchMatch) return false;
+
+        // Type filter
+        if (typeFilter && p.liquorType !== typeFilter) return false;
+
+        // Proof filter
+        const proofNum = parseFloat(formatProof(p.proof));
+        if (proofFilter === 'low' && proofNum >= 80) return false;
+        if (proofFilter === 'medium' && (proofNum < 80 || proofNum > 100)) return false;
+        if (proofFilter === 'high' && proofNum <= 100) return false;
+
+        // Price filter (On-prem price)
+        const priceNum = parseFloat(formatPrice(p.onPremPrice).replace('$', '')) || 0;
+        if (priceFilter === 'low' && priceNum >= 10) return false;
+        if (priceFilter === 'medium' && (priceNum < 10 || priceNum > 25)) return false;
+        if (priceFilter === 'high' && priceNum <= 25) return false;
+
+        return true;
+      });
+
+      // Sort alphabetically by brandName
+      filteredData.sort((a, b) => a.brandName.localeCompare(b.brandName));
+
+      displayResults(filteredData);
+      toggleClearButton();
     }
 
+    // Display clear button if search/filter active
+    function toggleClearButton() {
+      if (
+        searchBox.value.trim() !== '' ||
+        filterType.value !== '' ||
+        filterProof.value !== '' ||
+        filterPrice.value !== ''
+      ) {
+        clearBtn.style.display = 'block';
+      } else {
+        clearBtn.style.display = 'none';
+      }
+    }
+
+    // Display search results
     function displayResults(products) {
-      const container = document.getElementById('results');
       if (products.length === 0) {
-        container.innerHTML = `<div class="no-results">
+        resultsEl.innerHTML = `<div class="no-results">
           <h3>No results found</h3>
-          <p>Try a different search term</p>
+          <p>Try changing your search or filters.</p>
         </div>`;
         return;
       }
 
-      let html = '';
-      for (const p of products) {
-        html += `<div class="product">
-          <div class="product-name">${escapeHtml(p.brandName || p.adaName || '')}</div>
-          <div class="product-details">
-            <div class="detail-row"><strong>Type:</strong> ${escapeHtml(p.liquorType)}</div>
-            <div class="detail-row"><strong>Size:</strong> ${escapeHtml(p.bottleSize)} | <strong>Proof:</strong> ${formatProof(p.proof)}</div>
-            <div class="detail-row"><strong>Vendor:</strong> ${escapeHtml(p.vendorName)}</div>
-          </div>
-          <div class="prices">
-            <div class="price-box">
-              <div class="price-label">On-Premise</div>
-              <div class="price-value">${formatPrice(p.onPremPrice)}</div>
-            </div>
-            <div class="price-box">
-              <div class="price-label">Off-Premise</div>
-              <div class="price-value">${formatPrice(p.offPremPrice)}</div>
-            </div>
-            <div class="price-box">
-              <div class="price-label">Shelf Price</div>
-              <div class="price-value">${formatPrice(p.shelfPrice)}</div>
-            </div>
-          </div>
-          <div class="codes">
-            Code: ${escapeHtml(p.liquorCode)}${p.upc1 ? ' | UPC #1: ' + escapeHtml(p.upc1) : ''}${p.upc2 ? ' | UPC #2: ' + escapeHtml(p.upc2) : ''}
-            <br>
-            Effective Date: ${formatDate(p.effectiveDate)}
-          </div>
-        </div>`;
-      }
-      container.innerHTML = html;
-    }
+      // Show total count
+      let html = `<p><strong>${products.length} result${products.length !== 1 ? 's' : ''} found.</strong></p>`;
 
-    function escapeHtml(text) {
-      if (!text) return '';
-      return text.replace(/[&<>"']/g, function(m) {
-        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+      for (const p of products) {
+        html += `
+          <div class="product" tabindex="0" data-code="${p.liquorCode}">
+            <div class="product-name">${escapeHtml(p.brandName)}</div>
+            <div class="product-details">
+              <div class="detail-row"><strong>Type:</strong> ${escapeHtml(p.liquorType)}</div>
+              <div class="detail-row"><strong>Size:</strong> ${escapeHtml(p.bottleSize)} | <strong>Proof:</strong> ${formatProof(p.proof)}</div>
+              <div class="detail-row"><strong>Vendor:</strong> ${escapeHtml(p.vendorName)}</div>
+            </div>
+            <div class="prices">
+              <div class="price-box">
+                <div class="price-label">On-Premise</div>
+                <div class="price-value">${formatPrice(p.onPremPrice)}</div>
+              </div>
+              <div class="price-box">
+                <div class="price-label">Off-Premise</div>
+                <div class="price-value">${formatPrice(p.offPremPrice)}</div>
+              </div>
+              <div class="price-box">
+                <div class="price-label">Shelf Price</div>
+                <div class="price-value">${formatPrice(p.shelfPrice)}</div>
+              </div>
+            </div>
+            <div class="codes">Code: ${escapeHtml(p.liquorCode)}${p.upc1 ? ' | UPC1: ' + escapeHtml(p.upc1) : ''}${p.upc2 ? ' | UPC2: ' + escapeHtml(p.upc2) : ''}</div>
+          </div>
+        `;
+      }
+
+      resultsEl.innerHTML = html;
+
+      // Attach click + keyboard handler for modal
+      document.querySelectorAll('.product').forEach(elem => {
+        elem.onclick = () => openModal(elem.getAttribute('data-code'));
+        elem.onkeydown = e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openModal(elem.getAttribute('data-code'));
+          }
+        };
       });
     }
 
-    document.getElementById('loadBtn').addEventListener('click', loadData);
+    // Open modal with product details
+    function openModal(code) {
+      const p = liquorData.find(item => item.liquorCode === code);
+      if (!p) return;
 
-    document.getElementById('searchBox').addEventListener('input', e => {
-      if (!isLoaded) return;
-      const query = e.target.value.trim();
-      if (query.length >= 2) {
-        const results = searchProducts(query);
-        displayResults(results);
+      modalTitle.textContent = p.brandName;
+      modalBody.innerHTML = `
+        <p><strong>Liquor Code:</strong> ${escapeHtml(p.liquorCode)}</p>
+        <p><strong>ADA Number:</strong> ${escapeHtml(p.adaNumber)}</p>
+        <p><strong>ADA Name:</strong> ${escapeHtml(p.adaName)}</p>
+        <p><strong>Vendor:</strong> ${escapeHtml(p.vendorName)}</p>
+        <p><strong>Liquor Type:</strong> ${escapeHtml(p.liquorType)}</p>
+        <p><strong>Proof:</strong> ${formatProof(p.proof)}</p>
+        <p><strong>Bottle Size:</strong> ${escapeHtml(p.bottleSize)}</p>
+        <p><strong>Pack Size:</strong> ${escapeHtml(p.packSize)}</p>
+        <p><strong>On-Premise Price:</strong> ${formatPrice(p.onPremPrice)}</p>
+        <p><strong>Off-Premise Price:</strong> ${formatPrice(p.offPremPrice)}</p>
+        <p><strong>Shelf Price:</strong> ${formatPrice(p.shelfPrice)}</p>
+        <p><strong>UPC Code 1:</strong> ${escapeHtml(p.upc1)}</p>
+        <p><strong>UPC Code 2:</strong> ${escapeHtml(p.upc2)}</p>
+        <p><strong>Effective Date:</strong> ${formatDate(p.effectiveDate)}</p>
+      `;
+
+      // Update favorite button state
+      updateFavButton(code);
+
+      // Show modal
+      modal.style.display = 'block';
+
+      // Trap focus inside modal (basic)
+      modalCloseBtn.focus();
+    }
+
+    // Close modal
+    function closeModal() {
+      modal.style.display = 'none';
+    }
+
+    // Update favorite button style
+    function updateFavButton(code) {
+      if (isFavorite(code)) {
+        modalFavBtn.classList.add('favorited');
+        modalFavBtn.innerHTML = '&#9829;'; // filled heart
       } else {
-        clearResults();
+        modalFavBtn.classList.remove('favorited');
+        modalFavBtn.innerHTML = '&#9825;'; // empty heart
       }
+      modalFavBtn.dataset.code = code;
+    }
+
+    // Handle favorite toggle click
+    modalFavBtn.onclick = () => {
+      const code = modalFavBtn.dataset.code;
+      if (!code) return;
+      toggleFavorite(code);
+      updateFavButton(code);
+      filterAndDisplay(); // Refresh results to reflect favorite state if you want
+    };
+
+    // Close modal handlers
+    modalCloseBtn.onclick = closeModal;
+    window.onclick = e => {
+      if (e.target === modal) closeModal();
+    };
+    window.onkeydown = e => {
+      if (e.key === 'Escape' && modal.style.display === 'block') {
+        closeModal();
+      }
+    };
+
+    // Debounce function
+    function debounce(func, wait = 300) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+
+    // Search and filter handler (debounced)
+    const onSearchChange = debounce(() => {
+      filterAndDisplay();
+    }, 350);
+
+    searchBox.addEventListener('input', () => {
+      onSearchChange();
+      toggleClearButton();
     });
+    filterType.addEventListener('change', () => {
+      filterAndDisplay();
+      toggleClearButton();
+    });
+    filterProof.addEventListener('change', () => {
+      filterAndDisplay();
+      toggleClearButton();
+    });
+    filterPrice.addEventListener('change', () => {
+      filterAndDisplay();
+      toggleClearButton();
+    });
+
+    clearBtn.addEventListener('click', () => {
+      searchBox.value = '';
+      filterType.value = '';
+      filterProof.value = '';
+      filterPrice.value = '';
+      toggleClearButton();
+      filterAndDisplay();
+      searchBox.focus();
+    });
+
+    // Initialize app
+    loadData();
   </script>
 </body>
 </html>
