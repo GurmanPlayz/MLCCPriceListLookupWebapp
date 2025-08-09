@@ -2,18 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>🍷 Michigan Liquor Price Search</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Michigan Liquor Price Search with QuaggaJS Scanner</title>
+
 <style>
   body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 20px;
     background-color: #f5f5f5;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-tap-highlight-color: transparent;
   }
+
   .container {
     max-width: 800px;
     margin: 0 auto;
@@ -22,20 +21,23 @@
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   }
+
   h1 {
     color: #333;
     text-align: center;
     margin-bottom: 10px;
   }
+
   .subtitle {
     text-align: center;
     color: #666;
     margin-bottom: 30px;
   }
+
   .search-section {
-    margin-bottom: 15px;
-    position: relative;
+    margin-bottom: 30px;
   }
+
   button {
     background: #007bff;
     color: white;
@@ -45,16 +47,18 @@
     cursor: pointer;
     font-size: 16px;
     width: 100%;
-    margin-bottom: 10px;
-    user-select: none;
+    margin-bottom: 15px;
   }
-  button:hover:not(:disabled) {
+
+  button:hover {
     background: #0056b3;
   }
+
   button:disabled {
     background: #ccc;
     cursor: not-allowed;
   }
+
   input {
     width: 100%;
     padding: 12px;
@@ -62,23 +66,45 @@
     border-radius: 5px;
     font-size: 16px;
     box-sizing: border-box;
-    margin-bottom: 10px;
   }
+
   input:focus {
     border-color: #007bff;
     outline: none;
   }
+
+  .status {
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    display: none;
+  }
+
+  .status.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  .status.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+
   .help-text {
     background: #e9ecef;
     padding: 10px;
     border-radius: 5px;
     font-size: 14px;
     color: #495057;
-    margin-top: 0;
+    margin-top: 10px;
   }
+
   .results {
     margin-top: 20px;
   }
+
   .product {
     border: 1px solid #ddd;
     border-radius: 5px;
@@ -86,25 +112,30 @@
     padding: 15px;
     background: white;
   }
+
   .product-name {
     font-size: 18px;
     font-weight: bold;
     color: #007bff;
     margin-bottom: 10px;
   }
+
   .product-details {
     margin-bottom: 15px;
   }
+
   .detail-row {
     margin-bottom: 5px;
     font-size: 14px;
   }
+
   .prices {
     display: flex;
     gap: 15px;
     margin-bottom: 10px;
     flex-wrap: wrap;
   }
+
   .price-box {
     background: #f8f9fa;
     padding: 10px;
@@ -113,322 +144,215 @@
     flex: 1;
     min-width: 120px;
   }
+
   .price-label {
     font-size: 12px;
     color: #666;
     margin-bottom: 5px;
   }
+
   .price-value {
     font-size: 16px;
     font-weight: bold;
     color: #007bff;
   }
+
   .codes {
     font-size: 12px;
     color: #666;
     margin-top: 10px;
   }
+
   .no-results {
     text-align: center;
     padding: 40px;
     color: #666;
   }
 
+  /* Scanner modal */
   #scannerContainer {
     display: none;
     position: fixed;
-    z-index: 9999;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.85);
-    align-items: center;
+    z-index: 1000;
+    top:0; left:0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.75);
     justify-content: center;
-    flex-direction: column;
+    align-items: center;
   }
+
   #scanner {
     width: 90vw;
-    max-width: 600px;
-    aspect-ratio: 1 / 1;
+    max-width: 500px;
+    height: 300px;
+    border: 5px solid white;
     border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 0 20px #007bff;
     background: black;
   }
-  #scannerControls {
-    margin-top: 10px;
-  }
-  #scanResult {
-    color: white;
-    margin-top: 15px;
-    font-weight: bold;
-    min-height: 1.2em;
-  }
+
   #closeScannerBtn {
-    background: #dc3545;
-    margin-top: 12px;
-  }
-  #modal {
-    display: none;
-    position: fixed;
-    z-index: 10000;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.7);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  #modalContent {
-    background: white;
-    max-width: 600px;
-    margin: 40px auto;
-    border-radius: 10px;
-    padding: 20px;
-    box-sizing: border-box;
-  }
-  #modalCloseBtn {
+    margin-top: 10px;
+    padding: 10px 20px;
     background: #dc3545;
     color: white;
     border: none;
-    padding: 8px 14px;
     border-radius: 5px;
     cursor: pointer;
-    float: right;
-    font-size: 16px;
-  }
-  #modalTitle {
-    font-size: 24px;
-    font-weight: bold;
-    color: #007bff;
-    margin-bottom: 15px;
-  }
-  #modalDetails .detail-row {
-    font-size: 16px;
-    margin-bottom: 10px;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    body {
-      background: #121212;
-      color: #eee;
-    }
-    .container {
-      background: #1e1e1e;
-      box-shadow: 0 2px 10px rgba(255,255,255,0.1);
-    }
-    .price-box {
-      background: #333;
-    }
-    input, button {
-      background: #222;
-      border-color: #555;
-      color: #eee;
-    }
-    input:focus {
-      border-color: #3399ff;
-    }
-    #scannerContainer {
-      background: rgba(0,0,0,0.95);
-    }
-    #modalContent {
-      background: #222;
-      color: #eee;
-    }
-    #modalCloseBtn {
-      background: #bb4444;
-    }
   }
 </style>
+
 </head>
 <body>
-<div class="container" role="main">
-  <h1>🍷 Michigan Liquor Price Search</h1>
-  <p class="subtitle">Search the Michigan Liquor Control Commission price database</p>
+  <div class="container">
+    <h1>🍷 Michigan Liquor Price Search</h1>
+    <p class="subtitle">Search the Michigan Liquor Control Commission price database</p>
 
-  <div class="search-section">
-    <input
-      type="search"
-      id="searchBox"
-      placeholder="Search by code, name, type, vendor, or UPC..."
-      aria-label="Search products"
-      autocomplete="off"
-      spellcheck="false"
-      autocorrect="off"
-      disabled
-    />
-    <button id="scanBtn" aria-label="Scan barcode">📷 Scan Barcode</button>
-    <div class="help-text" aria-live="polite">
-      <strong>Search Tips:</strong> Try "Grey Goose", "Bourbon", "Vodka", or codes like "121"
+    <div class="search-section">
+      <button id="scanBtn">Scan Barcode</button>
+      <input type="text" id="searchBox" placeholder="Search by code, name, or type..." disabled />
+      <div id="status" class="status"></div>
+      <div class="help-text">
+        <strong>Search Tips:</strong> Try "Grey Goose", "Bourbon", "Vodka", or product codes like "121" or UPC codes.
+      </div>
+    </div>
+
+    <div id="results" class="results"></div>
+  </div>
+
+  <!-- Scanner modal -->
+  <div id="scannerContainer" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Barcode Scanner">
+    <div>
+      <div id="scanner"></div>
+      <button id="closeScannerBtn" aria-label="Close Scanner">Close Scanner</button>
     </div>
   </div>
 
-  <div id="results" class="results" aria-live="polite" aria-relevant="additions"></div>
-</div>
-
-<div id="scannerContainer" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Barcode scanner">
-  <div id="scanner"></div>
-  <div id="scanResult" aria-live="assertive"></div>
-  <div id="scannerControls">
-    <button id="closeScannerBtn" aria-label="Close barcode scanner">✖ Close Scanner</button>
-  </div>
-</div>
-
-<div id="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-  <div id="modalContent">
-    <button id="modalCloseBtn" aria-label="Close product details">✖ Close</button>
-    <h2 id="modalTitle"></h2>
-    <div id="modalDetails"></div>
-  </div>
-</div>
-
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- QuaggaJS -->
+  <script src="https://unpkg.com/quagga/dist/quagga.min.js"></script>
 
 <script>
   let liquorData = [];
   let isLoaded = false;
-  const searchBox = document.getElementById('searchBox');
+
+  const statusEl = document.getElementById('status');
   const resultsDiv = document.getElementById('results');
+  const searchBox = document.getElementById('searchBox');
   const scanBtn = document.getElementById('scanBtn');
   const scannerContainer = document.getElementById('scannerContainer');
-  const scanResult = document.getElementById('scanResult');
   const closeScannerBtn = document.getElementById('closeScannerBtn');
 
-  const modal = document.getElementById('modal');
-  const modalTitle = document.getElementById('modalTitle');
-  const modalDetails = document.getElementById('modalDetails');
-  const modalCloseBtn = document.getElementById('modalCloseBtn');
-
-  let html5QrcodeScanner = null;
-
+  // Load data from local text file in repo
   async function loadData() {
     try {
       const response = await fetch('webprbk.txt');
-      if (!response.ok) throw new Error('Network response was not ok');
-      const text = await response.text();
-      liquorData = parseData(text);
+      if (!response.ok) throw new Error('Failed to fetch data');
+      const rawText = await response.text();
+      liquorData = parseData(rawText);
       isLoaded = true;
       searchBox.disabled = false;
-      showStatus('✅ Data loaded successfully!', 'success');
-    } catch (error) {
-      showStatus('❌ Failed to load data: ' + error.message, 'error');
+      showStatus('✅ Data loaded successfully', 'success');
+    } catch(e) {
+      showStatus('❌ Error loading data: ' + e.message, 'error');
     }
   }
 
-  function parseData(txt) {
-    const lines = txt.split('\n').filter(line => line.trim().length >= 194);
-    const data = [];
-    for (const line of lines) {
-      const codeRaw = line.substring(0, 5);
-      const code = codeRaw.replace(/^0+/, '') || '0';
-      const name = line.substring(5, 37).trim();
-      const adaNum = line.substring(37, 40).trim();
-      const adaName = line.substring(40, 65).trim();
-      const vendor = line.substring(65, 90).trim();
-      const type = line.substring(90, 110).trim();
-      const proof = line.substring(110, 115).trim();
-      const size = line.substring(115, 122).trim();
-      const packSize = line.substring(122, 125).trim();
-      const onPriceRaw = line.substring(125, 136).trim();
-      const offPriceRaw = line.substring(136, 147).trim();
-      const shelfPriceRaw = line.substring(147, 158).trim();
-      const upc1Raw = line.substring(158, 172).trim();
-      const upc2Raw = line.substring(172, 186).trim();
+  // Parse fixed-width file data into objects
+  function parseData(text) {
+    const lines = text.split('\n');
+    const products = [];
+    for(let line of lines){
+      if(line.length < 194) continue; // skip invalid lines
 
-      const onPrice = parsePrice(onPriceRaw);
-      const offPrice = parsePrice(offPriceRaw);
-      const shelfPrice = parsePrice(shelfPriceRaw);
+      const codeRaw = line.slice(0, 5).trim();
+      const code = codeRaw.replace(/^0+/, ''); // remove leading zeros
 
-      const upc1 = normalizeUPC(upc1Raw);
-      const upc2 = normalizeUPC(upc2Raw);
+      const brandName = line.slice(5, 37).trim();
+      const adaNumber = line.slice(37, 40).trim();
+      const adaName = line.slice(40, 65).trim();
+      const vendorName = line.slice(65, 90).trim();
+      const liquorType = line.slice(90, 110).trim();
+      const proof = line.slice(110, 115).trim();
+      const bottleSize = line.slice(115, 122).trim();
+      const packSize = line.slice(122, 125).trim();
 
-      data.push({
+      // Prices: remove multiple dots, parse float, fallback to 0
+      function parsePrice(raw) {
+        let cleaned = raw.replace(/\.+/g, '.'); // replace multiple dots with single dot
+        let val = parseFloat(cleaned);
+        return isNaN(val) ? 0 : val;
+      }
+
+      const onPremisePrice = parsePrice(line.slice(125, 136).trim());
+      const offPremisePrice = parsePrice(line.slice(136, 147).trim());
+      const shelfPrice = parsePrice(line.slice(147, 158).trim());
+
+      // UPC: remove first two leading zeros if any, then ensure 12 digits (pad end if needed)
+      function cleanUPC(raw) {
+        let s = raw.trim();
+        if (s.length === 14 && s.startsWith('00')) {
+          s = s.slice(2);
+        }
+        if(s.length === 8) {
+          // Convert UPC-E to UPC-A (will handle later)
+          return s;
+        }
+        // pad or trim to 12
+        if (s.length < 12) s = s.padEnd(12, '0');
+        if (s.length > 12) s = s.slice(0,12);
+        return s;
+      }
+      const upc1 = cleanUPC(line.slice(158, 172));
+      const upc2 = cleanUPC(line.slice(172, 186));
+      const effectiveDate = line.slice(186, 194).trim();
+
+      products.push({
         code,
-        name,
-        adaNum,
+        name: brandName,
+        adaNumber,
         adaName,
-        vendor,
-        type,
+        vendor: vendorName,
+        type: liquorType,
         proof,
-        size,
+        size: bottleSize,
         packSize,
-        onPrice,
-        offPrice,
+        onPrice: onPremisePrice,
+        offPrice: offPremisePrice,
         shelfPrice,
         upc1,
-        upc2
+        upc2,
+        effectiveDate,
       });
     }
-    return data;
+    return products;
   }
 
-  function parsePrice(priceStr) {
-    const cleaned = priceStr.replace(/[^0-9.]/g, '');
-    if ((cleaned.match(/\./g) || []).length > 1) {
-      return parseFloat(cleaned.replace('..', '.')) || 0;
-    }
-    return parseFloat(cleaned) || 0;
-  }
-
-  function normalizeUPC(upc) {
-    let cleaned = upc.replace(/^0+/, '');
-    if (cleaned.length === 8) {
-      cleaned = upcEtoUPC_A(cleaned);
-    }
-    if (cleaned.length < 12) {
-      cleaned = cleaned.padStart(12, '0');
-    }
-    return cleaned;
-  }
-
-  function upcEtoUPC_A(upcE) {
-    const upc = upcE.padStart(8, '0');
-    if (!/^\d{8}$/.test(upc)) return upcE;
-
-    const numberSystem = upc[0];
-    const checkDigit = upc[7];
-    const manufacturer = upc.substring(1, 6);
-    const lastDigit = manufacturer[4];
-    let upcA = '';
-
-    switch (lastDigit) {
-      case '0':
-      case '1':
-      case '2':
-        upcA = manufacturer.slice(0, 2) + lastDigit + '0000' + manufacturer.slice(2, 4);
-        break;
-      case '3':
-        upcA = manufacturer.slice(0, 3) + '00000' + manufacturer[3];
-        break;
-      case '4':
-        upcA = manufacturer.slice(0, 4) + '00000' + manufacturer[4];
-        break;
-      default:
-        upcA = manufacturer.slice(0, 5) + '0000';
-        break;
-    }
-    return numberSystem + upcA + checkDigit;
+  function formatPrice(price) {
+    return price === 0 ? 'N/A' : '$' + price.toFixed(2);
   }
 
   function searchProducts(query) {
     if (!query || query.length < 2) return [];
-    const q = query.toLowerCase();
+    const searchTerm = query.toLowerCase();
 
     return liquorData.filter(p => {
       return (
-        p.code.toLowerCase().includes(q) ||
-        p.name.toLowerCase().includes(q) ||
-        p.type.toLowerCase().includes(q) ||
-        p.vendor.toLowerCase().includes(q) ||
-        (p.upc1 && p.upc1.includes(q)) ||
-        (p.upc2 && p.upc2.includes(q))
+        p.code.toLowerCase().includes(searchTerm) ||
+        p.name.toLowerCase().includes(searchTerm) ||
+        p.type.toLowerCase().includes(searchTerm) ||
+        p.vendor.toLowerCase().includes(searchTerm) ||
+        (p.upc1 && p.upc1.includes(searchTerm)) ||
+        (p.upc2 && p.upc2.includes(searchTerm))
       );
-    }).slice(0, 30);
+    }).slice(0, 20);
   }
 
   function displayResults(products) {
-    if (!products.length) {
-      resultsDiv.innerHTML = '<div class="no-results"><h3>No results found</h3><p>Try a different search term.</p></div>';
+    if (products.length === 0) {
+      resultsDiv.innerHTML = '<div class="no-results"><h3>No results found</h3><p>Try a different search term</p></div>';
       return;
     }
-    const html = products.map(p => `
-      <div class="product" tabindex="0" role="button" aria-pressed="false" data-code="${p.code}">
+    let html = '';
+    for (let p of products) {
+      html += `<div class="product">
         <div class="product-name">${p.name}</div>
         <div class="product-details">
           <div class="detail-row"><strong>Type:</strong> ${p.type}</div>
@@ -436,152 +360,136 @@
           <div class="detail-row"><strong>Vendor:</strong> ${p.vendor}</div>
         </div>
         <div class="prices">
-          <div class="price-box">
-            <div class="price-label">On-Premise</div>
-            <div class="price-value">${formatPrice(p.onPrice)}</div>
-          </div>
-          <div class="price-box">
-            <div class="price-label">Off-Premise</div>
-            <div class="price-value">${formatPrice(p.offPrice)}</div>
-          </div>
-          <div class="price-box">
-            <div class="price-label">Shelf Price</div>
-            <div class="price-value">${formatPrice(p.shelfPrice)}</div>
-          </div>
+          <div class="price-box"><div class="price-label">On-Premise</div><div class="price-value">${formatPrice(p.onPrice)}</div></div>
+          <div class="price-box"><div class="price-label">Off-Premise</div><div class="price-value">${formatPrice(p.offPrice)}</div></div>
+          <div class="price-box"><div class="price-label">Shelf Price</div><div class="price-value">${formatPrice(p.shelfPrice)}</div></div>
         </div>
-        <div class="codes">Code: ${p.code} | UPC1: ${p.upc1}${p.upc2 ? ' | UPC2: ' + p.upc2 : ''}</div>
-      </div>
-    `).join('');
-    resultsDiv.innerHTML = html;
-
-    document.querySelectorAll('.product').forEach(el => {
-      el.addEventListener('click', () => openModal(el.getAttribute('data-code')));
-      el.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          openModal(el.getAttribute('data-code'));
-        }
-      });
-    });
-  }
-
-  function formatPrice(price) {
-    return '$' + price.toFixed(2);
-  }
-
-  function openModal(code) {
-    const product = liquorData.find(p => p.code === code);
-    if (!product) return;
-
-    modalTitle.textContent = product.name;
-    modalDetails.innerHTML = `
-      <div class="detail-row"><strong>Code:</strong> ${product.code}</div>
-      <div class="detail-row"><strong>Type:</strong> ${product.type}</div>
-      <div class="detail-row"><strong>Size:</strong> ${product.size}</div>
-      <div class="detail-row"><strong>Proof:</strong> ${product.proof}</div>
-      <div class="detail-row"><strong>Vendor:</strong> ${product.vendor}</div>
-      <div class="detail-row"><strong>Pack Size:</strong> ${product.packSize}</div>
-      <div class="detail-row"><strong>Prices:</strong> On-Premise: ${formatPrice(product.onPrice)}, Off-Premise: ${formatPrice(product.offPrice)}, Shelf: ${formatPrice(product.shelfPrice)}</div>
-      <div class="detail-row"><strong>UPC 1:</strong> ${product.upc1}</div>
-      <div class="detail-row"><strong>UPC 2:</strong> ${product.upc2}</div>
-      <div class="detail-row"><strong>ADA Number:</strong> ${product.adaNum}</div>
-      <div class="detail-row"><strong>ADA Name:</strong> ${product.adaName}</div>
-    `;
-
-    modal.style.display = 'block';
-    modal.setAttribute('aria-hidden', 'false');
-    modalCloseBtn.focus();
-  }
-
-  function closeModal() {
-    modal.style.display = 'none';
-    modal.setAttribute('aria-hidden', 'true');
-    searchBox.focus();
-  }
-
-  modalCloseBtn.addEventListener('click', closeModal);
-  modal.addEventListener('click', e => {
-    if (e.target === modal) closeModal();
-  });
-
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      if (modal.style.display === 'block') closeModal();
-      if (scannerContainer.style.display === 'flex') closeScanner();
+        <div class="codes">Code: ${p.code} | UPC1: ${p.upc1} | UPC2: ${p.upc2}</div>
+      </div>`;
     }
-  });
+    resultsDiv.innerHTML = html;
+  }
 
-  // Barcode scanner logic
-  scanBtn.addEventListener('click', openScanner);
-  closeScannerBtn.addEventListener('click', closeScanner);
+  function showStatus(msg, type) {
+    statusEl.textContent = msg;
+    statusEl.className = 'status ' + type;
+    statusEl.style.display = 'block';
+  }
 
-  function openScanner() {
+  // Convert UPC-E (8 digits) to UPC-A (12 digits)
+  // Algorithm based on https://en.wikipedia.org/wiki/Universal_Product_Code#UPC-E
+  function upcEtoUPC_A(upce) {
+    if (!/^\d{8}$/.test(upce)) return upce;
+    const lastDigit = upce[7];
+    const manufacturer = upce.slice(1, 6);
+    let upca = '';
+    switch(lastDigit) {
+      case '0':
+      case '1':
+      case '2':
+        upca = upce[0] + manufacturer.slice(0, 2) + lastDigit + '0000' + manufacturer.slice(2, 5);
+        break;
+      case '3':
+        upca = upce[0] + manufacturer.slice(0, 3) + '00000' + manufacturer.slice(3, 5);
+        break;
+      case '4':
+        upca = upce[0] + manufacturer.slice(0, 4) + '00000' + manufacturer[4];
+        break;
+      default:
+        upca = upce[0] + manufacturer + '0000' + lastDigit;
+    }
+    return upca + upce[6];
+  }
+
+  // Start QuaggaJS scanner
+  function startScanner() {
     scanResult.textContent = '';
     scannerContainer.style.display = 'flex';
     scannerContainer.setAttribute('aria-hidden', 'false');
 
-    html5QrcodeScanner = new Html5Qrcode("scanner");
-
-    const config = {
-      fps: 15,
-      qrbox: { width: 300, height: 300 }, // square box for better orientation tolerance
-      experimentalFeatures: {
-        useBarCodeDetectorIfSupported: true, // leverage native browser API if available
+    Quagga.init({
+      inputStream: {
+        type: "LiveStream",
+        constraints: {
+          facingMode: "environment"
+        },
+        target: document.querySelector('#scanner'),
+        area: { // scanning area
+          top: "25%",    // top offset
+          right: "10%",  // right offset
+          left: "10%",   // left offset
+          bottom: "25%"  // bottom offset
+        },
       },
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.ITF,
-      ],
-    };
-
-    html5QrcodeScanner.start(
-      { facingMode: "environment" },
-      config,
-      qrCodeMessage => {
-        scanResult.textContent = `Scanned: ${qrCodeMessage}`;
-        let finalCode = qrCodeMessage;
-        // Convert UPC-E to UPC-A for searching
-        if (/^\d{8}$/.test(qrCodeMessage)) {
-          finalCode = upcEtoUPC_A(qrCodeMessage);
-        }
-        stopScanner();
-        setTimeout(() => {
-          closeScanner();
-          searchBox.value = finalCode;
-          searchBox.dispatchEvent(new Event('input'));
-          searchBox.focus();
-        }, 500);
+      decoder: {
+        readers: [
+          "upc_reader",
+          "upc_e_reader",
+          "ean_reader",
+          "ean_8_reader",
+          "code_128_reader",
+          "code_39_reader",
+          "code_93_reader",
+          "codabar_reader",
+          "i2of5_reader",
+          "2of5_reader"
+        ],
+        multiple: false
       },
-      errorMessage => {
-        // Ignore scan failures, no UI spam
+      locate: true,
+      numOfWorkers: navigator.hardwareConcurrency || 4,
+    }, function(err) {
+      if (err) {
+        showStatus('❌ Error initializing scanner: ' + err, 'error');
+        return;
       }
-    ).catch(err => {
-      scanResult.textContent = 'Error starting camera: ' + err;
+      Quagga.start();
+      showStatus('Scanner started. Point your camera at a barcode.', 'success');
     });
+
+    Quagga.onDetected(onDetected);
   }
 
   function stopScanner() {
-    if (html5QrcodeScanner) {
-      html5QrcodeScanner.stop().then(() => {
-        html5QrcodeScanner.clear();
-        html5QrcodeScanner = null;
-      }).catch(err => {
-        console.warn('Failed to stop scanner:', err);
-      });
-    }
-  }
-
-  function closeScanner() {
-    stopScanner();
+    Quagga.stop();
     scannerContainer.style.display = 'none';
     scannerContainer.setAttribute('aria-hidden', 'true');
+    Quagga.offDetected(onDetected);
   }
 
-  // Search input event
+  // On barcode detected:
+  function onDetected(result) {
+    if (!result || !result.codeResult || !result.codeResult.code) return;
+
+    let code = result.codeResult.code;
+
+    // If UPC-E 8 digit code, convert to UPC-A 12 digit
+    if (result.codeResult.format === 'upc_e' && code.length === 8) {
+      code = upcEtoUPC_A(code);
+    }
+
+    showStatus(`Scanned: ${code}`, 'success');
+
+    stopScanner();
+
+    // Set code to search box and trigger search
+    searchBox.value = code;
+    searchBox.dispatchEvent(new Event('input'));
+  }
+
+  // Event listeners
+  scanBtn.addEventListener('click', () => {
+    if (!isLoaded) {
+      showStatus('Data not loaded yet. Please wait.', 'error');
+      return;
+    }
+    startScanner();
+  });
+
+  closeScannerBtn.addEventListener('click', () => {
+    stopScanner();
+  });
+
   searchBox.addEventListener('input', e => {
     if (!isLoaded) return;
     const query = e.target.value.trim();
@@ -593,14 +501,9 @@
     }
   });
 
-  function showStatus(msg, type) {
-    console.log(`[Status ${type}]: ${msg}`);
-  }
-
   // Load data on page load
-  window.addEventListener('load', () => {
-    loadData();
-  });
+  window.addEventListener('load', loadData);
 </script>
+
 </body>
 </html>
