@@ -1,641 +1,686 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>Michigan Liquor Price Search with Scanner</title>
-  <style>
-    /* Your previous styles here, unchanged */
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>🍷 Michigan Liquor Price Search</title>
+<style>
+  /* Reset & base */
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f5f5f5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  h1 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #666;
+    margin-bottom: 30px;
+  }
+  .search-section {
+    margin-bottom: 15px;
+    position: relative;
+  }
+  button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%;
+    margin-bottom: 10px;
+    user-select: none;
+  }
+  button:hover:not(:disabled) {
+    background: #0056b3;
+  }
+  button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+  input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+  }
+  input:focus {
+    border-color: #007bff;
+    outline: none;
+  }
+  .help-text {
+    background: #e9ecef;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    color: #495057;
+    margin-top: 0;
+  }
+  .results {
+    margin-top: 20px;
+  }
+  .product {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    padding: 15px;
+    background: white;
+  }
+  .product-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #007bff;
+    margin-bottom: 10px;
+  }
+  .product-details {
+    margin-bottom: 15px;
+  }
+  .detail-row {
+    margin-bottom: 5px;
+    font-size: 14px;
+  }
+  .prices {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .price-box {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    flex: 1;
+    min-width: 120px;
+  }
+  .price-label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 5px;
+  }
+  .price-value {
+    font-size: 16px;
+    font-weight: bold;
+    color: #007bff;
+  }
+  .codes {
+    font-size: 12px;
+    color: #666;
+    margin-top: 10px;
+  }
+  .no-results {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+  }
+
+  /* Scanner overlay */
+  #scannerContainer {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  #scanner {
+    width: 90vw;
+    max-width: 600px;
+    aspect-ratio: 3 / 1.5;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 20px #007bff;
+    background: black;
+  }
+  #scannerControls {
+    margin-top: 10px;
+  }
+  #scanResult {
+    color: white;
+    margin-top: 15px;
+    font-weight: bold;
+    min-height: 1.2em;
+  }
+  #closeScannerBtn {
+    background: #dc3545;
+    margin-top: 12px;
+  }
+
+  /* Favorite button styles */
+  #modalFavBtn {
+    cursor: pointer;
+    font-size: 24px;
+    user-select: none;
+    background: none;
+    border: none;
+    color: #dc3545;
+    transition: transform 0.2s ease;
+  }
+  #modalFavBtn.favorited {
+    color: #e0245e;
+  }
+  #modalFavBtn:hover {
+    transform: scale(1.2);
+  }
+
+  /* Modal styles */
+  #modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #modalContent {
+    background: white;
+    max-width: 600px;
+    margin: 40px auto;
+    border-radius: 10px;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  #modalCloseBtn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    float: right;
+    font-size: 16px;
+  }
+  #modalTitle {
+    font-size: 24px;
+    font-weight: bold;
+    color: #007bff;
+    margin-bottom: 15px;
+  }
+  #modalDetails .detail-row {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+
+  @media (prefers-color-scheme: dark) {
     body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background-color: #f5f5f5;
-      -webkit-text-size-adjust: 100%;
+      background: #121212;
+      color: #eee;
     }
     .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    h1 {
-      color: #333;
-      text-align: center;
-      margin-bottom: 10px;
-    }
-    .subtitle {
-      text-align: center;
-      color: #666;
-      margin-bottom: 30px;
-    }
-    .search-section {
-      margin-bottom: 30px;
-      position: relative;
-    }
-    input {
-      width: 100%;
-      padding: 12px;
-      border: 2px solid #ddd;
-      border-radius: 5px;
-      font-size: 16px;
-      box-sizing: border-box;
-    }
-    input:focus {
-      border-color: #007bff;
-      outline: none;
-    }
-    .status {
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 5px;
-      display: none;
-    }
-    .status.success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
-    }
-    .status.error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-    }
-    .help-text {
-      background: #e9ecef;
-      padding: 10px;
-      border-radius: 5px;
-      font-size: 14px;
-      color: #495057;
-      margin-top: 10px;
-    }
-    .results {
-      margin-top: 20px;
-    }
-    .product {
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      margin-bottom: 15px;
-      padding: 15px;
-      background: white;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .product:hover {
-      background: #f0f8ff;
-    }
-    .product-name {
-      font-size: 18px;
-      font-weight: bold;
-      color: #007bff;
-      margin-bottom: 10px;
-    }
-    .product-details {
-      margin-bottom: 15px;
-    }
-    .detail-row {
-      margin-bottom: 5px;
-      font-size: 14px;
-    }
-    .prices {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
+      background: #1e1e1e;
+      box-shadow: 0 2px 10px rgba(255,255,255,0.1);
     }
     .price-box {
-      background: #f8f9fa;
-      padding: 10px;
-      border-radius: 5px;
-      text-align: center;
-      flex: 1;
-      min-width: 120px;
+      background: #333;
     }
-    .price-label {
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 5px;
+    input, button {
+      background: #222;
+      border-color: #555;
+      color: #eee;
     }
-    .price-value {
-      font-size: 16px;
-      font-weight: bold;
-      color: #007bff;
+    input:focus {
+      border-color: #3399ff;
     }
-    .codes {
-      font-size: 12px;
-      color: #666;
-      margin-top: 10px;
+    #scannerContainer {
+      background: rgba(0,0,0,0.95);
     }
-    .no-results {
-      text-align: center;
-      padding: 40px;
-      color: #666;
+    #modalContent {
+      background: #222;
+      color: #eee;
     }
-    /* Modal styles */
-    #modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0; top: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+    #modalCloseBtn {
+      background: #bb4444;
     }
-    #modal-content {
-      background: white;
-      margin: 50px auto;
-      padding: 20px;
-      border-radius: 10px;
-      max-width: 600px;
-      box-sizing: border-box;
-      position: relative;
-    }
-    #modal-close {
-      position: absolute;
-      right: 15px;
-      top: 10px;
-      font-size: 24px;
-      color: #aaa;
-      cursor: pointer;
-      border: none;
-      background: none;
-    }
-    #modal-close:hover {
-      color: #000;
-    }
-    #modal-fav-btn {
-      font-size: 24px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: #bbb;
-      margin-left: 10px;
-      vertical-align: middle;
-    }
-    #modal-fav-btn.favorited {
-      color: #e0245e;
-    }
-    #modal-title {
-      font-size: 24px;
-      font-weight: bold;
-      margin-bottom: 15px;
-      display: inline-block;
-      vertical-align: middle;
-    }
-    /* Responsive */
-    @media (max-width: 480px) {
-      .prices {
-        flex-direction: column;
-      }
-      .price-box {
-        min-width: auto;
-      }
-    }
-
-    /* Scanner UI */
-    #scanner-container {
-      display: none;
-      position: fixed;
-      z-index: 1500;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.75);
-      justify-content: center;
-      align-items: center;
-      padding: 10px;
-    }
-    #scanner {
-      width: 100%;
-      max-width: 600px;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 0 10px #000;
-      background: #000;
-    }
-    #close-scanner-btn {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: #fff;
-      border: none;
-      font-size: 20px;
-      border-radius: 50%;
-      width: 36px;
-      height: 36px;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      z-index: 1600;
-    }
-    #scan-result {
-      color: #fff;
-      margin-top: 10px;
-      font-size: 18px;
-      text-align: center;
-    }
-
-    /* Scan button */
-    #scan-btn {
-      background: #28a745;
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-      margin-top: 10px;
-      width: 100%;
-    }
-    #scan-btn:hover {
-      background: #218838;
-    }
-  </style>
+  }
+</style>
 </head>
 <body>
-  <div class="container" role="main">
-    <h1>🍷 Michigan Liquor Price Search</h1>
-    <p class="subtitle">Search the Michigan Liquor Control Commission price database</p>
+<div class="container" role="main">
+  <h1>🍷 Michigan Liquor Price Search</h1>
+  <p class="subtitle">Search the Michigan Liquor Control Commission price database</p>
 
-    <div class="search-section">
-      <input
-        type="text"
-        id="searchBox"
-        placeholder="Search by item code, name, or type..."
-        aria-label="Search liquor products"
-        autocomplete="off"
-      />
-      <button id="scan-btn" aria-label="Scan barcode to search">📷 Scan Barcode</button>
-      <div id="status" class="status" role="alert" aria-live="polite"></div>
-      <div class="help-text">
-        <strong>Search Tips:</strong> Try "Grey Goose", "Bourbon", "Vodka", or codes like "121"
-      </div>
-    </div>
-
-    <div id="results" class="results" aria-live="polite" aria-atomic="true"></div>
-  </div>
-
-  <!-- Modal -->
-  <div id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-hidden="true">
-    <div id="modal-content">
-      <button id="modal-close" aria-label="Close details">&times;</button>
-      <h2 id="modal-title"></h2>
-      <button id="modal-fav-btn" aria-label="Add to favorites">&#9825;</button>
-      <div id="modal-body"></div>
+  <div class="search-section">
+    <input
+      type="search"
+      id="searchBox"
+      placeholder="Search by code, name, type, vendor, or UPC..."
+      aria-label="Search products"
+      autocomplete="off"
+      spellcheck="false"
+      autocorrect="off"
+      disabled
+    />
+    <button id="scanBtn" aria-label="Scan barcode">📷 Scan Barcode</button>
+    <div class="help-text" aria-live="polite">
+      <strong>Search Tips:</strong> Try "Grey Goose", "Bourbon", "Vodka", or codes like "121"
     </div>
   </div>
 
-  <!-- Scanner container -->
-  <div id="scanner-container" role="dialog" aria-modal="true" aria-label="Barcode scanner" aria-hidden="true">
-    <button id="close-scanner-btn" aria-label="Close scanner">&times;</button>
-    <div id="scanner"></div>
-    <div id="scan-result"></div>
+  <div id="results" class="results" aria-live="polite" aria-relevant="additions"></div>
+</div>
+
+<!-- Scanner overlay -->
+<div id="scannerContainer" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Barcode scanner">
+  <div id="scanner"></div>
+  <div id="scanResult" aria-live="assertive"></div>
+  <div id="scannerControls">
+    <button id="closeScannerBtn" aria-label="Close barcode scanner">✖ Close Scanner</button>
   </div>
+</div>
 
-  <!-- html5-qrcode library -->
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<!-- Modal for product details -->
+<div id="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div id="modalContent">
+    <button id="modalCloseBtn" aria-label="Close product details">✖ Close</button>
+    <h2 id="modalTitle"></h2>
+    <div id="modalDetails"></div>
+    <button id="modalFavBtn" aria-label="Add to favorites">&#9825;</button>
+  </div>
+</div>
 
-  <script>
-    // Variables
-    let liquorData = [];
-    let isLoaded = false;
+<!-- Html5-qrcode library -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
-    const searchBox = document.getElementById('searchBox');
-    const status = document.getElementById('status');
-    const resultsDiv = document.getElementById('results');
-    const modal = document.getElementById('modal');
-    const modalTitle = document.getElementById('modal-title');
-    const modalBody = document.getElementById('modal-body');
-    const modalCloseBtn = document.getElementById('modal-close');
-    const modalFavBtn = document.getElementById('modal-fav-btn');
+<script>
+  // Globals
+  let liquorData = [];
+  let isLoaded = false;
+  const searchBox = document.getElementById('searchBox');
+  const resultsDiv = document.getElementById('results');
+  const scanBtn = document.getElementById('scanBtn');
+  const scannerContainer = document.getElementById('scannerContainer');
+  const scanResult = document.getElementById('scanResult');
+  const closeScannerBtn = document.getElementById('closeScannerBtn');
 
-    const scannerContainer = document.getElementById('scanner-container');
-    const scannerDiv = document.getElementById('scanner');
-    const closeScannerBtn = document.getElementById('close-scanner-btn');
-    const scanResult = document.getElementById('scan-result');
-    const scanBtn = document.getElementById('scan-btn');
+  const modal = document.getElementById('modal');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalDetails = document.getElementById('modalDetails');
+  const modalCloseBtn = document.getElementById('modalCloseBtn');
+  const modalFavBtn = document.getElementById('modalFavBtn');
 
-    // Barcode scanner instance
-    let html5QrcodeScanner;
+  let html5QrcodeScanner = null;
 
-    // Helpers
-    function escapeHtml(text) {
-      if (!text) return '';
-      return text.replace(/&/g, "&amp;")
-                 .replace(/</g, "&lt;")
-                 .replace(/>/g, "&gt;")
-                 .replace(/"/g, "&quot;")
-                 .replace(/'/g, "&#039;");
+  // Load data from local txt file
+  async function loadData() {
+    try {
+      const response = await fetch('webprbk.txt');
+      if (!response.ok) throw new Error('Network response was not ok');
+      const text = await response.text();
+      liquorData = parseData(text);
+      isLoaded = true;
+      searchBox.disabled = false;
+      showStatus('✅ Data loaded successfully!', 'success');
+    } catch (error) {
+      showStatus('❌ Failed to load data: ' + error.message, 'error');
     }
+  }
 
-    function normalizeCode(code) {
-      if (!code) return '';
-      return code.replace(/^0+/, '') || '0';
+  // Parse fixed-width txt file into objects
+  function parseData(txt) {
+    const lines = txt.split('\n').filter(line => line.trim().length >= 194);
+    const data = [];
+    for (const line of lines) {
+      // fixed positions as per your spec (1-based indexing)
+      const codeRaw = line.substring(0, 5);
+      const code = codeRaw.replace(/^0+/, '') || '0';
+      const name = line.substring(5, 37).trim();
+      const adaNum = line.substring(37, 40).trim();
+      const adaName = line.substring(40, 65).trim();
+      const vendor = line.substring(65, 90).trim();
+      const type = line.substring(90, 110).trim();
+      const proof = line.substring(110, 115).trim();
+      const size = line.substring(115, 122).trim();
+      const packSize = line.substring(122, 125).trim();
+      const onPriceRaw = line.substring(125, 136).trim();
+      const offPriceRaw = line.substring(136, 147).trim();
+      const shelfPriceRaw = line.substring(147, 158).trim();
+      const upc1Raw = line.substring(158, 172).trim();
+      const upc2Raw = line.substring(172, 186).trim();
+      // Convert prices: remove extra dots if any, parse float
+      const onPrice = parsePrice(onPriceRaw);
+      const offPrice = parsePrice(offPriceRaw);
+      const shelfPrice = parsePrice(shelfPriceRaw);
+      // Normalize UPCs: remove leading zeros, make sure 12-digit
+      const upc1 = normalizeUPC(upc1Raw);
+      const upc2 = normalizeUPC(upc2Raw);
+
+      data.push({
+        code,
+        name,
+        adaNum,
+        adaName,
+        vendor,
+        type,
+        proof,
+        size,
+        packSize,
+        onPrice,
+        offPrice,
+        shelfPrice,
+        upc1,
+        upc2
+      });
     }
+    return data;
+  }
 
-    function normalizeUPC(upc) {
-      if (!upc) return '';
-      let trimmed = upc.replace(/^0{2}/, '');
-      if (trimmed.length < 12) {
-        trimmed = trimmed.padStart(12, '0');
-      } else if (trimmed.length > 12) {
-        trimmed = trimmed.slice(0,12);
-      }
-      return trimmed;
+  function parsePrice(priceStr) {
+    // Remove all non-digit or dot chars
+    const cleaned = priceStr.replace(/[^0-9.]/g, '');
+    // Fix if contains two dots (e.g. "59..99")
+    if ((cleaned.match(/\./g) || []).length > 1) {
+      // Replace first .. with single .
+      return parseFloat(cleaned.replace('..', '.')) || 0;
     }
+    return parseFloat(cleaned) || 0;
+  }
 
-    function fixPrice(rawPrice) {
-      if (!rawPrice) return 0;
-      const cleaned = rawPrice.replace(/\.{2,}/g, '.');
-      const num = parseFloat(cleaned);
-      return isNaN(num) ? 0 : num;
+  // Normalize UPCs to 12-digit strings (remove leading zeros, pad if needed)
+  function normalizeUPC(upc) {
+    let cleaned = upc.replace(/^0+/, '');
+    // UPCs shorter than 12: pad with leading zeros
+    if (cleaned.length === 8) {
+      // UPC-E: convert to UPC-A
+      cleaned = upcEtoUPC_A(cleaned);
     }
-
-    function formatPrice(num) {
-      return '$' + num.toFixed(2);
+    if (cleaned.length < 12) {
+      cleaned = cleaned.padStart(12, '0');
     }
+    return cleaned;
+  }
 
-    function formatProof(proof) {
-      if (!proof) return '';
-      let p = proof.trim();
-      p = p.replace(/^0+/, '');
-      return p || '0.0';
+  // UPC-E to UPC-A conversion function (returns 12-digit UPC-A string)
+  function upcEtoUPC_A(upcE) {
+    const upc = upcE.padStart(8, '0');
+    if (!/^\d{8}$/.test(upc)) return upcE; // Not valid UPC-E
+
+    const numberSystem = upc[0];
+    const checkDigit = upc[7];
+    const manufacturer = upc.substring(1, 6);
+    const lastDigit = manufacturer[4];
+    let upcA = '';
+
+    switch (lastDigit) {
+      case '0':
+      case '1':
+      case '2':
+        upcA = manufacturer.slice(0, 2) + lastDigit + '0000' + manufacturer.slice(2, 4);
+        break;
+      case '3':
+        upcA = manufacturer.slice(0, 3) + '00000' + manufacturer[3];
+        break;
+      case '4':
+        upcA = manufacturer.slice(0, 4) + '00000' + manufacturer[4];
+        break;
+      default:
+        upcA = manufacturer.slice(0, 5) + '0000';
+        break;
     }
+    return numberSystem + upcA + checkDigit;
+  }
 
-    function parseLine(line) {
-      return {
-        liquorCode: normalizeCode(line.slice(0,5).trim()),
-        brandName: line.slice(5,37).trim(),
-        adaNumber: line.slice(37,40).trim(),
-        adaName: line.slice(40,65).trim(),
-        vendorName: line.slice(65,90).trim(),
-        liquorType: line.slice(90,110).trim(),
-        proof: line.slice(110,115).trim(),
-        bottleSize: line.slice(115,122).trim(),
-        packSize: line.slice(122,125).trim(),
-        onPremPrice: fixPrice(line.slice(125,136).trim()),
-        offPremPrice: fixPrice(line.slice(136,147).trim()),
-        shelfPrice: fixPrice(line.slice(147,158).trim()),
-        upc1: normalizeUPC(line.slice(158,172).trim()),
-        upc2: normalizeUPC(line.slice(172,186).trim()),
-        effectiveDate: line.slice(186,194).trim(),
-      };
-    }
+  // Search logic
+  function searchProducts(query) {
+    if (!query || query.length < 2) return [];
+    const q = query.toLowerCase();
 
-    async function loadData() {
-      status.style.display = 'block';
-      status.className = 'status';
-      status.textContent = 'Loading data...';
-
-      try {
-        const response = await fetch('./webprbk.txt');
-        if (!response.ok) throw new Error('Network response was not ok');
-        const text = await response.text();
-        const lines = text.split('\n').filter(line => line.trim().length >= 194);
-        liquorData = lines.map(parseLine);
-        isLoaded = true;
-        status.className = 'status success';
-        status.textContent = `✅ Loaded ${liquorData.length} products. Start searching!`;
-        searchBox.disabled = false;
-      } catch (err) {
-        status.className = 'status error';
-        status.textContent = '❌ Failed to load data. Please make sure the file "webprbk.txt" is in the same folder.';
-        searchBox.disabled = true;
-      }
-    }
-
-    function searchProducts(query) {
-      if (!query || query.length < 2) return [];
-      const q = query.toLowerCase();
-
-      const results = liquorData.filter(p =>
-        p.liquorCode.toLowerCase().includes(q) ||
-        p.brandName.toLowerCase().includes(q) ||
-        p.liquorType.toLowerCase().includes(q) ||
-        p.vendorName.toLowerCase().includes(q) ||
-        p.upc1.toLowerCase().includes(q) ||
-        p.upc2.toLowerCase().includes(q)
+    return liquorData.filter(p => {
+      return (
+        p.code.toLowerCase().includes(q) ||
+        p.name.toLowerCase().includes(q) ||
+        p.type.toLowerCase().includes(q) ||
+        p.vendor.toLowerCase().includes(q) ||
+        (p.upc1 && p.upc1.includes(q)) ||
+        (p.upc2 && p.upc2.includes(q))
       );
+    }).slice(0, 30);
+  }
 
-      return results.slice(0, 30);
+  // Display search results
+  function displayResults(products) {
+    if (!products.length) {
+      resultsDiv.innerHTML = '<div class="no-results"><h3>No results found</h3><p>Try a different search term.</p></div>';
+      return;
     }
-
-    function displayResults(products) {
-      if (!products.length) {
-        resultsDiv.innerHTML = `<div class="no-results"><h3>No results found</h3><p>Try a different search term</p></div>`;
-        return;
-      }
-
-      let html = '';
-      for (const p of products) {
-        html += `
-          <div class="product" tabindex="0" role="button" aria-pressed="false" data-code="${escapeHtml(p.liquorCode)}">
-            <div class="product-name">${escapeHtml(p.brandName)}</div>
-            <div class="product-details">
-              <div class="detail-row"><strong>Type:</strong> ${escapeHtml(p.liquorType)}</div>
-              <div class="detail-row"><strong>Size:</strong> ${escapeHtml(p.bottleSize)} | <strong>Proof:</strong> ${formatProof(p.proof)}</div>
-              <div class="detail-row"><strong>Vendor:</strong> ${escapeHtml(p.vendorName)}</div>
-            </div>
-            <div class="prices">
-              <div class="price-box">
-                <div class="price-label">On-Premise</div>
-                <div class="price-value">${formatPrice(p.onPremPrice)}</div>
-              </div>
-              <div class="price-box">
-                <div class="price-label">Off-Premise</div>
-                <div class="price-value">${formatPrice(p.offPremPrice)}</div>
-              </div>
-              <div class="price-box">
-                <div class="price-label">Shelf Price</div>
-                <div class="price-value">${formatPrice(p.shelfPrice)}</div>
-              </div>
-            </div>
-            <div class="codes">Code: ${escapeHtml(p.liquorCode)} | UPC1: ${escapeHtml(p.upc1)}${p.upc2 ? ` | UPC2: ${escapeHtml(p.upc2)}` : ''}</div>
+    const html = products.map(p => `
+      <div class="product" tabindex="0" role="button" aria-pressed="false" data-code="${p.code}">
+        <div class="product-name">${p.name}</div>
+        <div class="product-details">
+          <div class="detail-row"><strong>Type:</strong> ${p.type}</div>
+          <div class="detail-row"><strong>Size:</strong> ${p.size} | <strong>Proof:</strong> ${p.proof}</div>
+          <div class="detail-row"><strong>Vendor:</strong> ${p.vendor}</div>
+        </div>
+        <div class="prices">
+          <div class="price-box">
+            <div class="price-label">On-Premise</div>
+            <div class="price-value">${formatPrice(p.onPrice)}</div>
           </div>
-        `;
-      }
-      resultsDiv.innerHTML = html;
+          <div class="price-box">
+            <div class="price-label">Off-Premise</div>
+            <div class="price-value">${formatPrice(p.offPrice)}</div>
+          </div>
+          <div class="price-box">
+            <div class="price-label">Shelf Price</div>
+            <div class="price-value">${formatPrice(p.shelfPrice)}</div>
+          </div>
+        </div>
+        <div class="codes">Code: ${p.code} | UPC1: ${p.upc1}${p.upc2 ? ' | UPC2: ' + p.upc2 : ''}</div>
+      </div>
+    `).join('');
+    resultsDiv.innerHTML = html;
 
-      document.querySelectorAll('.product').forEach(el => {
-        el.addEventListener('click', () => openModal(el.getAttribute('data-code')));
-        el.addEventListener('keydown', e => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            openModal(el.getAttribute('data-code'));
-          }
-        });
+    // Add click and keyboard event to open modal for each product
+    document.querySelectorAll('.product').forEach(el => {
+      el.addEventListener('click', () => {
+        openModal(el.getAttribute('data-code'));
       });
-    }
-
-    function openModal(code) {
-      const p = liquorData.find(item => item.liquorCode === code);
-      if (!p) return;
-
-      modalTitle.textContent = p.brandName;
-      modalTitle.setAttribute('data-code', p.liquorCode);
-      modalBody.innerHTML = `
-        <p><strong>Item Code:</strong> ${escapeHtml(p.liquorCode)}</p>
-        <p><strong>ADA Number:</strong> ${escapeHtml(p.adaNumber)} — ${escapeHtml(p.adaName)}</p>
-        <p><strong>Vendor:</strong> ${escapeHtml(p.vendorName)}</p>
-        <p><strong>Type:</strong> ${escapeHtml(p.liquorType)}</p>
-        <p><strong>Proof:</strong> ${formatProof(p.proof)}</p>
-        <p><strong>Bottle Size:</strong> ${escapeHtml(p.bottleSize)}</p>
-        <p><strong>Pack Size:</strong> ${escapeHtml(p.packSize)}</p>
-        <p><strong>On-Premise Price:</strong> ${formatPrice(p.onPremPrice)}</p>
-        <p><strong>Off-Premise Price:</strong> ${formatPrice(p.offPremPrice)}</p>
-        <p><strong>Shelf Price:</strong> ${formatPrice(p.shelfPrice)}</p>
-        <p><strong>UPC #1:</strong> ${escapeHtml(p.upc1)}</p>
-        <p><strong>UPC #2:</strong> ${escapeHtml(p.upc2)}</p>
-        <p><strong>Effective Date:</strong> ${escapeHtml(p.effectiveDate)}</p>
-      `;
-
-      updateFavoriteButton(code);
-
-      modal.style.display = 'block';
-      modal.setAttribute('aria-hidden', 'false');
-      modalCloseBtn.focus();
-    }
-
-    function closeModal() {
-      modal.style.display = 'none';
-      modal.setAttribute('aria-hidden', 'true');
-    }
-
-    modalCloseBtn.addEventListener('click', closeModal);
-
-    window.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && modal.style.display === 'block') {
-        closeModal();
-      }
-    });
-
-    // Favorites management in localStorage
-    function getFavorites() {
-      const fav = localStorage.getItem('favorites') || '[]';
-      try {
-        return JSON.parse(fav);
-      } catch {
-        return [];
-      }
-    }
-
-    function saveFavorites(favs) {
-      localStorage.setItem('favorites', JSON.stringify(favs));
-    }
-
-    function updateFavoriteButton(code) {
-      const favs = getFavorites();
-      if (favs.includes(code)) {
-        modalFavBtn.classList.add('favorited');
-        modalFavBtn.innerHTML = '&#10084;'; // solid heart
-        modalFavBtn.setAttribute('aria-label', 'Remove from favorites');
-      } else {
-        modalFavBtn.classList.remove('favorited');
-        modalFavBtn.innerHTML = '&#9825;'; // empty heart
-        modalFavBtn.setAttribute('aria-label', 'Add to favorites');
-      }
-    }
-
-    modalFavBtn.addEventListener('click', () => {
-      const code = modalTitle.getAttribute('data-code');
-      if (!code) return;
-
-      const favs = getFavorites();
-      if (favs.includes(code)) {
-        const idx = favs.indexOf(code);
-        favs.splice(idx, 1);
-      } else {
-        favs.push(code);
-      }
-      saveFavorites(favs);
-      updateFavoriteButton(code);
-    });
-
-    // Search handling
-    searchBox.addEventListener('input', e => {
-      if (!isLoaded) return;
-
-      const query = e.target.value.trim();
-      if (query.length >= 2) {
-        const results = searchProducts(query);
-        displayResults(results);
-      } else {
-        resultsDiv.innerHTML = '';
-      }
-    });
-
-    // --- SCANNER Integration ---
-
-    function openScanner() {
-      scanResult.textContent = '';
-      scannerContainer.style.display = 'flex';
-      scannerContainer.setAttribute('aria-hidden', 'false');
-
-      html5QrcodeScanner = new Html5Qrcode("scanner");
-
-      const config = {
-        fps: 10,
-        qrbox: { width: 250, height: 100 },
-        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.ITF,
-          Html5QrcodeSupportedFormats.QR_CODE // just in case item codes as QR
-        ],
-      };
-
-      html5QrcodeScanner.start(
-        { facingMode: "environment" },
-        config,
-        qrCodeMessage => {
-          scanResult.textContent = `Scanned: ${qrCodeMessage}`;
-          stopScanner();
-          // Insert scanned code into search box and trigger search
-          searchBox.value = qrCodeMessage;
-          searchBox.dispatchEvent(new Event('input'));
-          closeScanner();
-        },
-        errorMessage => {
-          // no need to do anything on scan failure for now
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openModal(el.getAttribute('data-code'));
         }
-      ).catch(err => {
-        scanResult.textContent = 'Error starting camera: ' + err;
+      });
+    });
+  }
+
+  // Format price to $xx.xx
+  function formatPrice(price) {
+    return '$' + price.toFixed(2);
+  }
+
+  // Modal logic for product details and favorites
+  let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+
+  function openModal(code) {
+    const product = liquorData.find(p => p.code === code);
+    if (!product) return;
+
+    modalTitle.textContent = product.name;
+    modalDetails.innerHTML = `
+      <div class="detail-row"><strong>Code:</strong> ${product.code}</div>
+      <div class="detail-row"><strong>Type:</strong> ${product.type}</div>
+      <div class="detail-row"><strong>Size:</strong> ${product.size}</div>
+      <div class="detail-row"><strong>Proof:</strong> ${product.proof}</div>
+      <div class="detail-row"><strong>Vendor:</strong> ${product.vendor}</div>
+      <div class="detail-row"><strong>Pack Size:</strong> ${product.packSize}</div>
+      <div class="detail-row"><strong>Prices:</strong> On-Premise: ${formatPrice(product.onPrice)}, Off-Premise: ${formatPrice(product.offPrice)}, Shelf: ${formatPrice(product.shelfPrice)}</div>
+      <div class="detail-row"><strong>UPC 1:</strong> ${product.upc1}</div>
+      <div class="detail-row"><strong>UPC 2:</strong> ${product.upc2}</div>
+      <div class="detail-row"><strong>ADA Number:</strong> ${product.adaNum}</div>
+      <div class="detail-row"><strong>ADA Name:</strong> ${product.adaName}</div>
+    `;
+
+    updateFavoriteButton(code);
+
+    modal.style.display = 'block';
+    modal.setAttribute('aria-hidden', 'false');
+    modalCloseBtn.focus();
+  }
+
+  function closeModal() {
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    searchBox.focus();
+  }
+
+  function updateFavoriteButton(code) {
+    if (favorites.includes(code)) {
+      modalFavBtn.classList.add('favorited');
+      modalFavBtn.innerHTML = '&#9829;'; // filled heart
+      modalFavBtn.setAttribute('aria-label', 'Remove from favorites');
+    } else {
+      modalFavBtn.classList.remove('favorited');
+      modalFavBtn.innerHTML = '&#9825;'; // empty heart
+      modalFavBtn.setAttribute('aria-label', 'Add to favorites');
+    }
+    modalFavBtn.dataset.code = code;
+  }
+
+  modalFavBtn.addEventListener('click', () => {
+    const code = modalFavBtn.dataset.code;
+    if (!code) return;
+    if (favorites.includes(code)) {
+      favorites = favorites.filter(c => c !== code);
+    } else {
+      favorites.push(code);
+    }
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+    updateFavoriteButton(code);
+  });
+
+  modalCloseBtn.addEventListener('click', closeModal);
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeModal();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modal.style.display === 'block') {
+      closeModal();
+    }
+    if (e.key === 'Escape' && scannerContainer.style.display === 'flex') {
+      closeScanner();
+    }
+  });
+
+  // Scanner integration with html5-qrcode
+  scanBtn.addEventListener('click', openScanner);
+  closeScannerBtn.addEventListener('click', closeScanner);
+
+  function openScanner() {
+    scanResult.textContent = '';
+    scannerContainer.style.display = 'flex';
+    scannerContainer.setAttribute('aria-hidden', 'false');
+
+    html5QrcodeScanner = new Html5Qrcode("scanner");
+
+    const config = {
+      fps: 15,
+      qrbox: { width: 300, height: 150 }, // wider for easier scan
+      supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.ITF,
+        Html5QrcodeSupportedFormats.QR_CODE
+      ],
+    };
+
+    html5QrcodeScanner.start(
+      { facingMode: "environment" },
+      config,
+      qrCodeMessage => {
+        scanResult.textContent = `Scanned: ${qrCodeMessage}`;
+        let finalCode = qrCodeMessage;
+        if (/^\d{8}$/.test(qrCodeMessage)) {
+          finalCode = upcEtoUPC_A(qrCodeMessage);
+        }
+        stopScanner();
+        setTimeout(() => {
+          closeScanner();
+          searchBox.value = finalCode;
+          searchBox.dispatchEvent(new Event('input'));
+          searchBox.focus();
+        }, 500);
+      },
+      errorMessage => {
+        // ignore scan failures
+      }
+    ).catch(err => {
+      scanResult.textContent = 'Error starting camera: ' + err;
+    });
+  }
+
+  function stopScanner() {
+    if (html5QrcodeScanner) {
+      html5QrcodeScanner.stop().then(() => {
+        html5QrcodeScanner.clear();
+        html5QrcodeScanner = null;
+      }).catch(err => {
+        console.warn('Failed to stop scanner:', err);
       });
     }
+  }
 
-    function stopScanner() {
-      if (html5QrcodeScanner) {
-        html5QrcodeScanner.stop().then(() => {
-          html5QrcodeScanner.clear();
-          html5QrcodeScanner = null;
-        }).catch(err => {
-          console.warn('Failed to stop scanner:', err);
-        });
-      }
+  function closeScanner() {
+    stopScanner();
+    scannerContainer.style.display = 'none';
+    scannerContainer.setAttribute('aria-hidden', 'true');
+  }
+
+  // Search input event
+  searchBox.addEventListener('input', e => {
+    if (!isLoaded) return;
+    const query = e.target.value.trim();
+    if (query.length >= 2) {
+      const results = searchProducts(query);
+      displayResults(results);
+    } else {
+      resultsDiv.innerHTML = '';
     }
+  });
 
-    function closeScanner() {
-      stopScanner();
-      scannerContainer.style.display = 'none';
-      scannerContainer.setAttribute('aria-hidden', 'true');
-    }
+  // Status messages helper
+  function showStatus(msg, type) {
+    // Could add a status div if needed - currently disabled
+    console.log(`[Status ${type}]: ${msg}`);
+  }
 
-    scanBtn.addEventListener('click', () => {
-      openScanner();
-    });
-    closeScannerBtn.addEventListener('click', () => {
-      closeScanner();
-    });
+  // Format price helper (for completeness here)
+  function formatPrice(price) {
+    return '$' + price.toFixed(2);
+  }
 
-    // Load data on start
-    window.addEventListener('load', () => {
-      searchBox.disabled = true;
-      loadData();
-    });
-
-  </script>
+  // Auto load data on page load
+  window.addEventListener('load', () => {
+    loadData();
+  });
+</script>
 </body>
 </html>
