@@ -1,297 +1,198 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Michigan Liquor Price Search</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; text-align: center; margin-bottom: 10px; }
-        .subtitle { text-align: center; color: #666; margin-bottom: 30px; }
-        .search-section { margin-bottom: 30px; }
-        button { background: #007bff; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; margin-bottom: 15px; }
-        button:hover { background: #0056b3; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; box-sizing: border-box; }
-        input:focus { border-color: #007bff; outline: none; }
-        .status { padding: 10px; margin: 10px 0; border-radius: 5px; display: none; }
-        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .help-text { background: #e9ecef; padding: 10px; border-radius: 5px; font-size: 14px; color: #495057; margin-top: 10px; }
-        .results { margin-top: 20px; }
-        .product { border: 1px solid #ddd; border-radius: 5px; margin-bottom: 15px; padding: 15px; background: white; }
-        .product-name { font-size: 18px; font-weight: bold; color: #007bff; margin-bottom: 10px; }
-        .product-details { margin-bottom: 15px; }
-        .detail-row { margin-bottom: 5px; font-size: 14px; }
-        .prices { display: flex; gap: 15px; margin-bottom: 10px; flex-wrap: wrap; }
-        .price-box { background: #f8f9fa; padding: 10px; border-radius: 5px; text-align: center; flex: 1; min-width: 120px; }
-        .price-label { font-size: 12px; color: #666; margin-bottom: 5px; }
-        .price-value { font-size: 16px; font-weight: bold; color: #007bff; }
-        .codes { font-size: 12px; color: #666; margin-top: 10px; }
-        .no-results { text-align: center; padding: 40px; color: #666; }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Michigan Liquor Price Search</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    padding: 1em;
+    max-width: 800px;
+    margin: auto;
+  }
+  input[type="text"] {
+    width: 100%;
+    font-size: 1.2em;
+    padding: 0.5em;
+  }
+  button {
+    font-size: 1em;
+    margin-top: 0.5em;
+    padding: 0.5em 1em;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1em;
+  }
+  th, td {
+    text-align: left;
+    border-bottom: 1px solid #ccc;
+    padding: 0.3em;
+  }
+  tr:hover {
+    background: #f0f0f0;
+  }
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>🍷 Michigan Liquor Price Search</h1>
-        <p class="subtitle">Search the Michigan Liquor Control Commission price database</p>
 
-        <div class="search-section">
-            <button id="loadBtn">Load Sample Data</button>
-            <div id="status" class="status"></div>
+<h1>Michigan Liquor Price Search</h1>
 
-            <input type="text" id="searchBox" placeholder="Search by code, name, or type..." disabled>
+<input id="searchInput" type="text" placeholder="Search by Item Code, UPC #1, UPC #2, or Item Name..." />
+<button id="searchBtn">Search</button>
+<p id="status">Loading data, please wait...</p>
 
-            <div class="help-text">
-                <strong>Search Tips:</strong> Try "Grey Goose", "Bourbon", "Vodka", or product codes like "00121"
-            </div>
-        </div>
+<table id="resultsTable" hidden>
+  <thead>
+    <tr>
+      <th>Item Code</th>
+      <th>Brand Name</th>
+      <th>ADA Name</th>
+      <th>Vendor</th>
+      <th>Liquor Type</th>
+      <th>Proof</th>
+      <th>Bottle Size</th>
+      <th>Pack Size</th>
+      <th>On Prem Price</th>
+      <th>Off Prem Price</th>
+      <th>Shelf Price</th>
+      <th>UPC #1</th>
+      <th>UPC #2</th>
+      <th>Effective Date</th>
+    </tr>
+  </thead>
+  <tbody id="resultsBody"></tbody>
+</table>
 
-        <div id="results" class="results"></div>
-    </div>
+<script>
+  const DATA_URL = 'webprbk.txt'; // local file you host on GitHub Pages
 
-    <script>
-    /*****************************************************************************
-     * Updated client script
-     * - Attempts to fetch /data/products.json (three path variants)
-     * - Falls back to sampleProducts if JSON not present
-     * - Debounced search, renders results to #results
-     *****************************************************************************/
+  let products = [];
 
-    // ---------- sample data (kept from your original) ----------
-    var sampleProducts = [
-        { code: "00121", name: "BANKER'S CLUB BLEND", type: "AMERICAN BLEND", vendor: "LAIRD AND CO", size: "1000 ML", proof: "80.0", onPrice: 7.62, offPrice: 7.62, shelfPrice: 8.99, upc1: "00084848241207" },
-        { code: "00166", name: "GREY GOOSE LE CITRON", type: "FLAVORED VODKA", vendor: "BACARDI USA", size: "750 ML", proof: "80.0", onPrice: 21.20, offPrice: 21.20, shelfPrice: 24.99, upc1: "00080480282042" },
-        { code: "02980", name: "TITO'S HANDMADE VODKA", type: "VODKA", vendor: "FIFTH GENERATION", size: "750 ML", proof: "80.0", onPrice: 16.95, offPrice: 16.95, shelfPrice: 19.99, upc1: "00619947000020" },
-        { code: "00358", name: "BUFFALO TRACE BOURBON", type: "STRAIGHT BOURBON", vendor: "SAZERAC CO INC", size: "750 ML", proof: "90.0", onPrice: 23.74, offPrice: 23.74, shelfPrice: 27.99, upc1: "00080244009236" },
-        { code: "01486", name: "GREY GOOSE VODKA", type: "VODKA", vendor: "BACARDI USA", size: "1750 ML", proof: "80.0", onPrice: 42.37, offPrice: 42.37, shelfPrice: 49.96, upc1: "00080480280000" },
-        { code: "02086", name: "BULLEIT BOURBON", type: "STRAIGHT BOURBON", vendor: "DIAGEO AMERICAS", size: "750 ML", proof: "90.0", onPrice: 23.74, offPrice: 23.74, shelfPrice: 27.99, upc1: "00087000055250" }
-    ];
+  // Utility to parse one line from fixed-width fields
+  function parseLine(line) {
+    return {
+      liquorCode: line.substring(0, 5).trim(),
+      brandName: line.substring(5, 37).trim(),
+      adaNumber: line.substring(37, 40).trim(),
+      adaName: line.substring(40, 65).trim(),
+      vendorName: line.substring(65, 90).trim(),
+      liquorType: line.substring(90, 110).trim(),
+      proof: line.substring(110, 115).trim(),
+      bottleSize: line.substring(115, 122).trim(),
+      packSize: line.substring(122, 125).trim(),
+      onPremPrice: line.substring(125, 136).trim(),
+      offPremPrice: line.substring(136, 147).trim(),
+      shelfPrice: line.substring(147, 158).trim(),
+      upc1: line.substring(158, 172).trim(),
+      upc2: line.substring(172, 186).trim(),
+      effectiveDate: line.substring(186, 194).trim(),
+    };
+  }
 
-    // ---------- UI references ----------
-    const STATUS_EL = document.getElementById('status');
-    const SEARCH_EL = document.getElementById('searchBox');
-    const RESULTS_EL = document.getElementById('results');
-    const LOAD_BTN = document.getElementById('loadBtn');
+  // Format prices with decimals: stored as 9(08).99 but string might be like '0000123456'?
+  function formatPrice(priceStr) {
+    if (!priceStr || priceStr.length < 3) return '';
+    let len = priceStr.length;
+    let dollars = priceStr.slice(0, len - 2).replace(/^0+/, '') || '0';
+    let cents = priceStr.slice(len - 2);
+    return `$${dollars}.${cents}`;
+  }
 
-    // ---------- state ----------
-    let liquorData = [];
-    let isLoaded = false;
-    const MAX_RESULTS = 100; // limit for performance
-
-    // ---------- helpers ----------
-    function setStatus(text, type) {
-        if (!STATUS_EL) return;
-        STATUS_EL.style.display = 'block';
-        STATUS_EL.className = 'status' + (type ? ' ' + type : '');
-        STATUS_EL.innerHTML = text;
+  // Format proof to show decimal (e.g. '0950' = 95.0)
+  function formatProof(proofStr) {
+    if (!proofStr) return '';
+    if (proofStr.length === 5) {
+      // e.g. '099.9'
+      return proofStr;
     }
-    function clearStatus() {
-        if (!STATUS_EL) return;
-        STATUS_EL.style.display = 'none';
-        STATUS_EL.innerHTML = '';
+    // fallback: insert decimal before last digit
+    let n = parseInt(proofStr, 10);
+    if (isNaN(n)) return proofStr;
+    return (n / 10).toFixed(1);
+  }
+
+  function formatDate(mmddccyy) {
+    if (mmddccyy.length !== 8) return mmddccyy;
+    let mm = mmddccyy.slice(0, 2);
+    let dd = mmddccyy.slice(2, 4);
+    let yyyy = '20' + mmddccyy.slice(4, 6);
+    return `${mm}/${dd}/${yyyy}`;
+  }
+
+  async function loadData() {
+    document.getElementById('status').textContent = 'Loading data...';
+    try {
+      const res = await fetch(DATA_URL);
+      if (!res.ok) throw new Error('Failed to load data file.');
+      const text = await res.text();
+      const lines = text.split('\n').filter(l => l.trim().length >= 194);
+      products = lines.map(parseLine);
+      document.getElementById('status').textContent = `Loaded ${products.length} products.`;
+    } catch (e) {
+      document.getElementById('status').textContent = 'Error loading data: ' + e.message;
     }
-    function numericFrom(x) {
-        if (x == null) return null;
-        if (typeof x === 'number') return x;
-        const n = (''+x).replace(/[^0-9.\-]/g,'').trim();
-        return n ? parseFloat(n) : null;
+  }
+
+  function searchProducts(query) {
+    query = query.trim().toLowerCase();
+    if (!query) return [];
+    return products.filter(p =>
+      p.liquorCode.toLowerCase().includes(query) ||
+      p.upc1.toLowerCase().includes(query) ||
+      p.upc2.toLowerCase().includes(query) ||
+      p.brandName.toLowerCase().includes(query) ||
+      p.adaName.toLowerCase().includes(query)
+    );
+  }
+
+  function displayResults(results) {
+    const tbody = document.getElementById('resultsBody');
+    tbody.innerHTML = '';
+    if (results.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="14">No results found.</td></tr>';
+    } else {
+      for (const p of results) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${p.liquorCode}</td>
+          <td>${p.brandName}</td>
+          <td>${p.adaName}</td>
+          <td>${p.vendorName}</td>
+          <td>${p.liquorType}</td>
+          <td>${formatProof(p.proof)}</td>
+          <td>${p.bottleSize}</td>
+          <td>${p.packSize}</td>
+          <td>${formatPrice(p.onPremPrice)}</td>
+          <td>${formatPrice(p.offPremPrice)}</td>
+          <td>${formatPrice(p.shelfPrice)}</td>
+          <td>${p.upc1}</td>
+          <td>${p.upc2}</td>
+          <td>${formatDate(p.effectiveDate)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
     }
-    function formatPrice(p){
-        const n = numericFrom(p);
-        if (n == null || isNaN(n)) return '';
-        return '$' + n.toFixed(2);
+    document.getElementById('resultsTable').hidden = false;
+  }
+
+  // Event listeners
+  document.getElementById('searchBtn').addEventListener('click', () => {
+    const query = document.getElementById('searchInput').value;
+    const results = searchProducts(query);
+    displayResults(results);
+  });
+
+  document.getElementById('searchInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter') {
+      document.getElementById('searchBtn').click();
     }
-    function escapeHtml(s) {
-        if (s == null) return '';
-        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-    }
-    function debounce(fn, wait) {
-        let t = null;
-        return function(...args) {
-            clearTimeout(t);
-            t = setTimeout(() => fn.apply(this, args), wait);
-        };
-    }
+  });
 
-    // ---------- try fetch local JSON at common paths ----------
-    async function tryFetchPaths() {
-        const paths = ['/data/products.json', './data/products.json', 'data/products.json'];
-        for (const p of paths) {
-            try {
-                setStatus('Loading product index (' + p + ') ...');
-                const resp = await fetch(p, { cache: 'no-store' });
-                if (!resp.ok) {
-                    console.warn('Not found at', p, resp.status);
-                    continue;
-                }
-                const json = await resp.json();
-                return json;
-            } catch (err) {
-                console.warn('Fetch failed for', p, err);
-            }
-        }
-        return null;
-    }
+  loadData();
+</script>
 
-    // ---------- main loader ----------
-    async function loadProducts() {
-        // Try to load generated JSON first (GitHub Pages Option A)
-        const arr = await tryFetchPaths();
-        if (arr && Array.isArray(arr) && arr.length) {
-            liquorData = arr;
-            isLoaded = true;
-            setStatus('✅ Loaded ' + arr.length + ' products from products.json', 'success');
-            return;
-        }
-
-        // fallback to sampleProducts (your embedded sample data)
-        if (sampleProducts && sampleProducts.length) {
-            liquorData = sampleProducts.slice();
-            isLoaded = true;
-            setStatus('⚠️ Could not load /data/products.json — using sample data', 'error');
-            return;
-        }
-
-        liquorData = [];
-        isLoaded = false;
-        setStatus('❌ Could not load products.json and no sample data available', 'error');
-    }
-
-    // ---------- search logic ----------
-    // Support different field shapes: parsed Action JSON uses liquorCode/brandName/vendorName/bottleSize...
-    function searchProducts(q) {
-        if (!isLoaded) return [];
-        if (!q || q.trim().length < 1) return [];
-        q = q.toLowerCase();
-        const results = [];
-        for (const it of liquorData) {
-            if (!it) continue;
-            // normalize field access for both JSON from action and your sampleProducts keys
-            const code = (it.liquorCode || it.code || '').toString().toLowerCase();
-            const upc1 = (it.upc1 || it.upc || '').toString().toLowerCase();
-            const upc2 = (it.upc2 || '').toString().toLowerCase();
-            const brand = (it.brandName || it.name || '').toString().toLowerCase();
-            const vendor = (it.vendorName || it.vendor || '').toString().toLowerCase();
-            const type = (it.liquorType || it.type || '').toString().toLowerCase();
-
-            if (code.includes(q) || upc1.includes(q) || upc2.includes(q) || brand.includes(q) || vendor.includes(q) || type.includes(q)) {
-                results.push(it);
-                if (results.length >= MAX_RESULTS) break;
-            }
-        }
-        return results;
-    }
-
-    // ---------- render ----------
-    function renderResults(list) {
-        if (!RESULTS_EL) return;
-        if (!list || list.length === 0) {
-            RESULTS_EL.innerHTML = '<div class="no-results"><h3>No results found</h3><p>Try a different search term</p></div>';
-            return;
-        }
-
-        const html = list.map(p => {
-            const code = escapeHtml(p.liquorCode || p.code || '');
-            const name = escapeHtml(p.brandName || p.name || '(no name)');
-            const type = escapeHtml(p.liquorType || p.type || '');
-            const vendor = escapeHtml(p.vendorName || p.vendor || '');
-            const size = escapeHtml(p.bottleSize || p.size || '');
-            const proof = escapeHtml(p.proof || '');
-            const onP = formatPrice(p.onPremPriceN ?? p.onPrice ?? p.onPremPrice);
-            const offP = formatPrice(p.offPremPriceN ?? p.offPrice ?? p.offPremPrice);
-            const shelf = formatPrice(p.shelfPriceN ?? p.shelfPrice);
-            const upc = escapeHtml(p.upc1 || p.upc || '');
-
-            return `
-                <div class="product">
-                  <div class="product-name">${name}</div>
-                  <div class="product-details">
-                    <div class="detail-row"><strong>Type:</strong> ${type}</div>
-                    <div class="detail-row"><strong>Size:</strong> ${size} ${proof ? '| <strong>Proof:</strong> ' + proof : ''}</div>
-                    <div class="detail-row"><strong>Vendor:</strong> ${vendor}</div>
-                  </div>
-                  <div class="prices">
-                    <div class="price-box"><div class="price-label">On-Premise</div><div class="price-value">${onP}</div></div>
-                    <div class="price-box"><div class="price-label">Off-Premise</div><div class="price-value">${offP}</div></div>
-                    <div class="price-box"><div class="price-label">Shelf Price</div><div class="price-value">${shelf}</div></div>
-                  </div>
-                  <div class="codes">Code: ${code} ${upc ? '| UPC: ' + upc : ''}</div>
-                </div>
-            `;
-        }).join('\n');
-
-        RESULTS_EL.innerHTML = html;
-    }
-
-    // ---------- wire UI events ----------
-    if (LOAD_BTN) {
-        LOAD_BTN.addEventListener('click', async function() {
-            // If not loaded yet (first click) we try to load the products.json. If already loaded, refresh.
-            LOAD_BTN.disabled = true;
-            LOAD_BTN.textContent = 'Loading...';
-            try {
-                await loadProducts();
-                if (isLoaded) {
-                    SEARCH_EL.disabled = false;
-                    SEARCH_EL.focus();
-                    LOAD_BTN.textContent = 'Refresh Live Data';
-                } else {
-                    LOAD_BTN.textContent = 'Try Live Data Again';
-                }
-            } catch (err) {
-                console.error(err);
-                setStatus('Unexpected error while loading data', 'error');
-                LOAD_BTN.textContent = 'Try Live Data Again';
-            } finally {
-                LOAD_BTN.disabled = false;
-            }
-        });
-    }
-
-    if (SEARCH_EL) {
-        SEARCH_EL.disabled = true;
-        const onInput = debounce(function(e) {
-            const q = (e.target.value || '').trim();
-            if (q.length < 2) {
-                RESULTS_EL.innerHTML = '';
-                return;
-            }
-            const res = searchProducts(q);
-            renderResults(res.slice(0, MAX_RESULTS));
-            setStatus('Showing ' + (res.length > MAX_RESULTS ? MAX_RESULTS + '+' : res.length) + ' results (limited)', ''); // non-styled status
-        }, 150);
-        SEARCH_EL.addEventListener('input', onInput);
-    }
-
-    // ---------- initial load: try JSON, else fall back to sample ----------
-    window.addEventListener('load', async function() {
-        // Try to load the generated JSON silently, but still allow sample fallback
-        try {
-            await loadProducts();
-            if (isLoaded) {
-                SEARCH_EL.disabled = false;
-                LOAD_BTN.textContent = 'Refresh Live Data';
-            } else {
-                // If JSON not found, enable sample data path but keep button label same as before
-                // Load sample data so page is usable immediately
-                liquorData = sampleProducts.slice();
-                isLoaded = true;
-                SEARCH_EL.disabled = false;
-                LOAD_BTN.textContent = 'Try Live Data';
-                setStatus('Using sample data. Click "Try Live Data" to attempt loading the official file.', 'error');
-            }
-        } catch (err) {
-            console.error('Initial load error:', err);
-            // fallback to sample
-            liquorData = sampleProducts.slice();
-            isLoaded = true;
-            SEARCH_EL.disabled = false;
-            LOAD_BTN.textContent = 'Try Live Data';
-            setStatus('Using sample data. Click "Try Live Data" to attempt loading the official file.', 'error');
-        }
-    });
-    </script>
 </body>
 </html>
