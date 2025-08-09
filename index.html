@@ -1,182 +1,337 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Michigan Liquor Price Search</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>MI Liquor Price Search (PWA)</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="MI Liquor Search">
+  <meta name="mobile-web-app-capable" content="yes">
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#06b6d4;--glass:rgba(255,255,255,0.03)}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#061021 0%, #082031 100%);color:#e6eef6;font-family:Inter,ui-sans-serif,system-ui,Helvetica,Arial;}
+    .app{max-width:980px;margin:0 auto;padding:12px 14px 80px}
+    header{display:flex;gap:10px;align-items:center}
+    h1{font-size:18px;margin:6px 0}
+    .controls{display:grid;grid-template-columns:1fr auto;gap:8px;margin:12px 0}
+    input,select,button{padding:10px;border-radius:10px;border:0;background:var(--glass);color:inherit;font-size:15px}
+    .results{margin-top:8px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.02));padding:10px;border-radius:12px;margin-bottom:8px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+    .left{flex:1;min-width:0}
+    .brand{font-weight:600;font-size:15px}
+    .meta{color:var(--muted);font-size:13px;margin-top:4px}
+    .upc{font-family:monospace;color:var(--accent)}
+    .small{font-size:13px;color:var(--muted)}
+    .actions{display:flex;gap:6px}
+    .note{color:var(--muted);font-size:13px;margin-top:8px}
+    .toolbar{display:flex;gap:8px;align-items:center}
+    .badge{background:rgba(6,182,212,0.12);color:var(--accent);padding:6px 8px;border-radius:8px;font-weight:600}
+    footer{position:fixed;left:0;right:0;bottom:0;padding:10px;background:linear-gradient(0deg, rgba(2,6,23,0.92), rgba(2,6,23,0.6));backdrop-filter:blur(6px);display:flex;justify-content:center}
+    .footer-btn{padding:10px 14px;border-radius:10px;border:0;background:var(--accent);color:#032; font-weight:700}
+    @media(min-width:700px){.app{padding:24px}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <svg width="44" height="44" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+        <rect x="0" y="0" width="48" height="48" rx="10" fill="#061428"/>
+        <path d="M16 32c0-2.2 4-4 8-4s8 1.8 8 4" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="12" y="8" width="24" height="20" rx="3" stroke="#06b6d4" stroke-width="2"/>
+      </svg>
+      <div style="flex:1">
+        <h1>MI Liquor Price Search</h1>
+        <div class="small">Search the MLCC price list by code, UPC, or name — installable PWA.</div>
+      </div>
+      <div class="toolbar">
+        <div id="status" class="badge">Loading…</div>
+      </div>
+    </header>
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-        }
+    <div class="controls">
+      <input id="search" placeholder="Search by code, UPC, or brand name (e.g. 12345 or 01234567891234 or imperial)" autocomplete="off" autocapitalize="off">
+      <select id="sort">
+        <option value="relevance">Sort: Relevance</option>
+        <option value="brand">Sort: Brand A→Z</option>
+        <option value="price-asc">Price ↑</option>
+        <option value="price-desc">Price ↓</option>
+      </select>
+    </div>
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+    <div class="note">Tip: tap a result to copy UPC; long results list is limited for speed. Data refresh button will fetch latest file from MLCC.</div>
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            color: white;
-        }
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button id="refresh">Refresh data</button>
+      <button id="toggleOffline">Toggle offline mode</button>
+      <button id="clearCache">Clear cached data</button>
+    </div>
 
-        .header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
+    <div id="results" class="results" aria-live="polite"></div>
 
-        .header p {
-            font-size: 1rem;
-            opacity: 0.9;
-        }
+    <div style="margin-top:12px;color:var(--muted);font-size:13px">
+      <strong>Source:</strong> Michigan LARA MLCC price list (webprbk.txt)
+    </div>
+  </div>
 
-        .search-container {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            margin-bottom: 25px;
-        }
+  <footer>
+    <button id="installBtn" class="footer-btn" style="display:none">Install App</button>
+  </footer>
 
-        .search-input {
-            width: 100%;
-            padding: 15px 20px;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
-            font-size: 16px;
-            background: #f8f9fa;
-            transition: all 0.3s ease;
-        }
+<script>
+// ========== CONFIG ==========
+const DATA_URL = 'https://documents.apps.lara.state.mi.us/mlcc/webprbk.txt';
+const FIELD_SPECS = [
+  [0,5,'liquorCode'],
+  [5,37,'brandName'],
+  [37,40,'adaNumber'],
+  [40,65,'adaName'],
+  [65,90,'vendorName'],
+  [90,110,'liquorType'],
+  [110,115,'proof'],
+  [115,122,'bottleSize'],
+  [122,125,'packSize'],
+  [125,136,'onPremPrice'],
+  [136,147,'offPremPrice'],
+  [147,158,'shelfPrice'],
+  [158,172,'upc1'],
+  [172,186,'upc2'],
+  [186,194,'effectiveDate']
+];
+const DB_NAME = 'mi-liquor-db';
+const DB_STORE = 'products';
+let db;
+let products = []; // parsed items
+let isOfflineMode = false;
+let deferredPrompt = null;
 
-        .search-input:focus {
-            outline: none;
-            border-color: #667eea;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
+// ========== IndexedDB helpers ==========
+function openDB(){
+  return new Promise((res,rej)=>{
+    const r = indexedDB.open(DB_NAME,1);
+    r.onupgradeneeded = e => {
+      const idb = e.target.result;
+      if(!idb.objectStoreNames.contains(DB_STORE)){
+        idb.createObjectStore(DB_STORE, {keyPath:'liquorCode'});
+      }
+    }
+    r.onsuccess = ()=>{db=r.result;res(db)};
+    r.onerror = ()=>rej(r.error);
+  });
+}
+function saveAll(items){
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(DB_STORE,'readwrite');
+    const store = tx.objectStore(DB_STORE);
+    store.clear();
+    for(const it of items) store.put(it);
+    tx.oncomplete = ()=>res();
+    tx.onerror = ()=>rej(tx.error);
+  });
+}
+function loadAllFromDb(){
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(DB_STORE,'readonly');
+    const store = tx.objectStore(DB_STORE);
+    const all = store.getAll();
+    all.onsuccess = ()=>res(all.result || []);
+    all.onerror = ()=>rej(all.error);
+  });
+}
+function clearDb(){
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(DB_STORE,'readwrite');
+    const store = tx.objectStore(DB_STORE);
+    const r = store.clear();
+    r.onsuccess = ()=>res();
+    r.onerror = ()=>rej(r.error);
+  });
+}
 
-        .search-help {
-            margin-top: 15px;
-            padding: 12px;
-            background: #f1f3f4;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            color: #5f6368;
-        }
+// ========== Fetch + Parse ==========
+async function fetchAndParse(){
+  updateStatus('Fetching list...');
+  try{
+    const resp = await fetch(DATA_URL,{cache:'no-store'});
+    if(!resp.ok) throw new Error('Network response was not OK');
+    const text = await resp.text();
+    const parsed = parseFixedWidth(text);
+    products = parsed;
+    await saveAll(products);
+    updateStatus('Loaded ' + products.length + ' items.');
+    return products;
+  }catch(err){
+    console.warn('Fetch failed',err);
+    updateStatus('Failed to fetch. Loading cached data.');
+    const cached = await loadAllFromDb();
+    products = cached;
+    updateStatus('Loaded ' + products.length + ' cached items.');
+    return products;
+  }
+}
 
-        .load-button {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 15px 25px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            width: 100%;
-            margin-bottom: 15px;
-        }
+function parseFixedWidth(text){
+  const lines = text.split(/\r?\n/);
+  const out = [];
+  for(const line of lines){
+    if(!line || line.trim().length<1) continue;
+    const obj = {};
+    for(const [s,e,name] of FIELD_SPECS){
+      obj[name] = (line.slice(s,e)||'').trim();
+    }
+    // normalize prices (convert to float if possible)
+    function numFromStr(str){
+      if(!str) return null;
+      // remove possible leading spaces and non-numeric
+      const n = str.replace(/[^0-9.\-]/g,'').trim();
+      return n.length?parseFloat(n):null;
+    }
+    obj.onPremPriceN = numFromStr(obj.onPremPrice);
+    obj.offPremPriceN = numFromStr(obj.offPremPrice);
+    obj.shelfPriceN = numFromStr(obj.shelfPrice);
+    out.push(obj);
+  }
+  return out;
+}
 
-        .load-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-        }
+// ========== UI ==========
+const searchEl = document.getElementById('search');
+const resultsEl = document.getElementById('results');
+const statusEl = document.getElementById('status');
+const sortEl = document.getElementById('sort');
+const refreshBtn = document.getElementById('refresh');
+const installBtn = document.getElementById('installBtn');
+const toggleOffline = document.getElementById('toggleOffline');
+const clearCacheBtn = document.getElementById('clearCache');
 
-        .load-button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
+function updateStatus(t){ statusEl.textContent = t; }
 
-        .results {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
+function renderList(list){
+  resultsEl.innerHTML = '';
+  if(!list.length){ resultsEl.innerHTML = '<div class="small" style="padding:12px;color:var(--muted)">No results</div>'; return; }
+  for(const it of list){
+    const card = document.createElement('div'); card.className='card';
+    const left = document.createElement('div'); left.className='left';
+    const brand = document.createElement('div'); brand.className='brand'; brand.textContent = it.brandName || '(no name)';
+    const meta = document.createElement('div'); meta.className='meta';
+    const price = (it.offPremPriceN!=null)? ('$' + (it.offPremPriceN.toFixed(2))) : (it.offPremPrice||'');
+    meta.innerHTML = `${it.liquorCode} • ${it.bottleSize || ''} • <span class="upc">${it.upc1 || ''}</span> • ${price}`;
+    left.appendChild(brand); left.appendChild(meta);
 
-        .result-item {
-            padding: 20px;
-            border-bottom: 1px solid #f1f3f4;
-            transition: background-color 0.2s ease;
-        }
+    const actions = document.createElement('div'); actions.className='actions';
+    const copyBtn = document.createElement('button'); copyBtn.textContent = 'Copy UPC';
+    copyBtn.onclick = async ()=>{
+      const text = it.upc1 || it.upc2 || it.liquorCode || it.brandName;
+      try{ await navigator.clipboard.writeText(text); copyBtn.textContent='Copied'; setTimeout(()=>copyBtn.textContent='Copy UPC',1200); }catch(e){ copyBtn.textContent='Copy'; alert('Copy failed — your browser may require permission.'); }
+    };
+    const detailsBtn = document.createElement('button'); detailsBtn.textContent='Details';
+    detailsBtn.onclick = ()=> alert(JSON.stringify(it,null,2));
+    actions.appendChild(copyBtn); actions.appendChild(detailsBtn);
 
-        .result-item:last-child {
-            border-bottom: none;
-        }
+    card.appendChild(left); card.appendChild(actions);
 
-        .result-item:hover {
-            background: #f8f9fa;
-        }
+    // tap entire card to copy UPC quickly
+    card.addEventListener('click', async (ev)=>{
+      if(ev.target.tagName.toLowerCase()==='button') return; // ignore clicks on buttons
+      const text = it.upc1 || it.upc2 || it.liquorCode || it.brandName;
+      try{ await navigator.clipboard.writeText(text); updateStatus('Copied: ' + text); setTimeout(()=>updateStatus('Ready'),1200); }catch(e){ updateStatus('Copy failed'); }
+    });
 
-        .brand-name {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #1a73e8;
-            margin-bottom: 8px;
-        }
+    resultsEl.appendChild(card);
+  }
+}
 
-        .liquor-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
-            font-size: 0.9rem;
-            color: #5f6368;
-        }
+// ========== Search / Sort ==========
+function searchTerm(term){
+  term = (term||'').toLowerCase().trim();
+  if(!term) return products.slice(0,200);
+  // If numeric-only, try exact code or UPC
+  const isNum = /^\d+$/.test(term);
+  const out = products.filter(it=>{
+    if(!it) return false;
+    if(isNum){
+      if(it.liquorCode && it.liquorCode.toLowerCase().includes(term)) return true;
+      if(it.upc1 && it.upc1.toLowerCase().includes(term)) return true;
+      if(it.upc2 && it.upc2.toLowerCase().includes(term)) return true;
+    }
+    // brand fuzzy
+    if(it.brandName && it.brandName.toLowerCase().includes(term)) return true;
+    return false;
+  });
+  return out.slice(0,500);
+}
 
-        .price-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 15px;
-            margin-top: 15px;
-        }
+function applySort(list,key){
+  const copy = list.slice();
+  const mode = sortEl.value;
+  if(mode==='brand') copy.sort((a,b)=>(a.brandName||'').localeCompare(b.brandName||''));
+  else if(mode==='price-asc') copy.sort((a,b)=> ( (a.offPremPriceN||999999) - (b.offPremPriceN||999999) ));
+  else if(mode==='price-desc') copy.sort((a,b)=> ( (b.offPremPriceN||0) - (a.offPremPriceN||0) ));
+  return copy;
+}
 
-        .price-box {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-        }
+// ========== Event wiring ==========
+let searchTimeout=null;
+searchEl.addEventListener('input',()=>{
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(()=>{
+    const results = searchTerm(searchEl.value);
+    const sorted = applySort(results);
+    renderList(sorted);
+  },120);
+});
+sortEl.addEventListener('change', ()=>{ const results = searchTerm(searchEl.value); renderList(applySort(results)); });
+refreshBtn.addEventListener('click', async ()=>{ updateStatus('Refreshing...'); await fetchAndParse(); renderList(applySort(searchTerm(searchEl.value))); });
+clearCacheBtn.addEventListener('click', async ()=>{ await clearDb(); products=[]; renderList([]); updateStatus('Cache cleared'); });
+toggleOffline.addEventListener('click', ()=>{ isOfflineMode=!isOfflineMode; updateStatus(isOfflineMode? 'Offline mode ON' : 'Offline mode OFF'); });
 
-        .price-label {
-            font-size: 0.75rem;
-            color: #5f6368;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+// ========== Install prompt (Android/Chrome) ==========
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault(); deferredPrompt = e; installBtn.style.display='inline-block';
+});
+installBtn.addEventListener('click', async ()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const choice = await deferredPrompt.userChoice;
+  if(choice.outcome==='accepted'){ updateStatus('App installed'); }
+  deferredPrompt = null; installBtn.style.display='none';
+});
 
-        .price-value {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #1a73e8;
-            margin-top: 4px;
-        }
+// ========== Init ==========
+(async function init(){
+  await openDB();
+  // try to load cached first so UI is fast
+  const cached = await loadAllFromDb();
+  if(cached && cached.length){ products = cached; updateStatus('Loaded ' + products.length + ' cached items'); renderList(applySort(searchTerm(''))); }
+  // then fetch fresh in background
+  try{ await fetchAndParse(); renderList(applySort(searchTerm(searchEl.value))); }catch(e){ console.warn(e); }
+  updateStatus('Ready');
+})();
 
-        .code-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 10px;
-            font-size: 0.85rem;
-        }
+// ========== Helpful utilities ===========
+// Create and inject a manifest dynamically (so single-file deploy works)
+(function createManifest(){
+  const manifest = {
+    name: 'MI Liquor Price Search',
+    short_name: 'MI Liquor',
+    start_url: '.',
+    display: 'standalone',
+    background_color: '#061428',
+    theme_color: '#06b6d4',
+    icons: [{src: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="10" fill="#061428"/><path d="M16 32c0-2.2 4-4 8-4s8 1.8 8 4" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="12" y="8" width="24" height="20" rx="3" stroke="#06b6d4" stroke-width="2"/></svg>') , sizes:'48x48', type:'image/svg+xml'}]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('link'); link.rel='manifest'; link.href = url; document.head.appendChild(link);
+})();
 
-        .code-item {
-            background: #e8f0fe;
-            padding: 8px 10px;
-            border-radius: 6px;
+// iOS splash / meta (Safari ignores manifest) — provide a home-screen icon link (SVG data)
+(function injectAppleIcon(){
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="80" fill="#061428"/><g stroke="#06b6d4" stroke-width="18" fill="none"><rect x="128" y="128" width="256" height="160" rx="24"/><path d="M170 354c0-34 60-62 98-62s98 28 98 62"/></g></svg>';
+  const link = document.createElement('link'); link.rel='apple-touch-icon'; link.href='data:image/svg+xml;utf8,'+encodeURIComponent(svg); document.head.appendChild(link);
+})();
+
+// ========== Notes for user (console) ==========
+console.log('MI Liquor PWA loaded. Data URL:', DATA_URL);
+</script>
+</body>
+</html>
