@@ -1,198 +1,368 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Michigan Liquor Price Search</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    padding: 1em;
-    max-width: 800px;
-    margin: auto;
-  }
-  input[type="text"] {
-    width: 100%;
-    font-size: 1.2em;
-    padding: 0.5em;
-  }
-  button {
-    font-size: 1em;
-    margin-top: 0.5em;
-    padding: 0.5em 1em;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1em;
-  }
-  th, td {
-    text-align: left;
-    border-bottom: 1px solid #ccc;
-    padding: 0.3em;
-  }
-  tr:hover {
-    background: #f0f0f0;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🍷 Michigan Liquor Price Search</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+    }
+    
+    .search-section {
+      margin-bottom: 30px;
+    }
+    
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+      margin-bottom: 15px;
+    }
+    
+    button:hover:not(:disabled) {
+      background: #0056b3;
+    }
+    
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    
+    input:focus {
+      border-color: #007bff;
+      outline: none;
+    }
+    
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      display: none;
+    }
+    
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .help-text {
+      background: #e9ecef;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 14px;
+      color: #495057;
+      margin-top: 10px;
+    }
+    
+    .results {
+      margin-top: 20px;
+    }
+    
+    .product {
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      padding: 15px;
+      background: white;
+      transition: box-shadow 0.2s ease;
+    }
+    
+    .product:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    
+    .product-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: #007bff;
+      margin-bottom: 10px;
+    }
+    
+    .product-details {
+      margin-bottom: 15px;
+      font-size: 14px;
+      color: #444;
+    }
+    
+    .detail-row {
+      margin-bottom: 5px;
+    }
+    
+    .prices {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .price-box {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 5px;
+      text-align: center;
+      flex: 1;
+      min-width: 120px;
+    }
+    
+    .price-label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    
+    .price-value {
+      font-size: 16px;
+      font-weight: bold;
+      color: #007bff;
+    }
+    
+    .codes {
+      font-size: 12px;
+      color: #666;
+      margin-top: 10px;
+      word-break: break-word;
+    }
+    
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+  </style>
 </head>
 <body>
+  <div class="container">
+    <h1>🍷 Michigan Liquor Price Search</h1>
+    <p class="subtitle">Search the Michigan Liquor Control Commission price database</p>
+    
+    <div class="search-section">
+      <button id="loadBtn">Load Data</button>
+      <div id="status" class="status"></div>
+      
+      <input
+        type="text"
+        id="searchBox"
+        placeholder="Search by item code, UPC #1, UPC #2, or item name..."
+        disabled
+        autocomplete="off"
+        spellcheck="false"
+      />
+      
+      <div class="help-text">
+        <strong>Search Tips:</strong> Try "Grey Goose", "Bourbon", "Vodka", or codes like "00121"
+      </div>
+    </div>
+    
+    <div id="results" class="results"></div>
+  </div>
 
-<h1>Michigan Liquor Price Search</h1>
+  <script>
+    const DATA_FILE = 'webprbk.txt'; // Place the actual file here in your repo
+    let liquorData = [];
+    let isLoaded = false;
 
-<input id="searchInput" type="text" placeholder="Search by Item Code, UPC #1, UPC #2, or Item Name..." />
-<button id="searchBtn">Search</button>
-<p id="status">Loading data, please wait...</p>
-
-<table id="resultsTable" hidden>
-  <thead>
-    <tr>
-      <th>Item Code</th>
-      <th>Brand Name</th>
-      <th>ADA Name</th>
-      <th>Vendor</th>
-      <th>Liquor Type</th>
-      <th>Proof</th>
-      <th>Bottle Size</th>
-      <th>Pack Size</th>
-      <th>On Prem Price</th>
-      <th>Off Prem Price</th>
-      <th>Shelf Price</th>
-      <th>UPC #1</th>
-      <th>UPC #2</th>
-      <th>Effective Date</th>
-    </tr>
-  </thead>
-  <tbody id="resultsBody"></tbody>
-</table>
-
-<script>
-  const DATA_URL = 'webprbk.txt'; // local file you host on GitHub Pages
-
-  let products = [];
-
-  // Utility to parse one line from fixed-width fields
-  function parseLine(line) {
-    return {
-      liquorCode: line.substring(0, 5).trim(),
-      brandName: line.substring(5, 37).trim(),
-      adaNumber: line.substring(37, 40).trim(),
-      adaName: line.substring(40, 65).trim(),
-      vendorName: line.substring(65, 90).trim(),
-      liquorType: line.substring(90, 110).trim(),
-      proof: line.substring(110, 115).trim(),
-      bottleSize: line.substring(115, 122).trim(),
-      packSize: line.substring(122, 125).trim(),
-      onPremPrice: line.substring(125, 136).trim(),
-      offPremPrice: line.substring(136, 147).trim(),
-      shelfPrice: line.substring(147, 158).trim(),
-      upc1: line.substring(158, 172).trim(),
-      upc2: line.substring(172, 186).trim(),
-      effectiveDate: line.substring(186, 194).trim(),
-    };
-  }
-
-  // Format prices with decimals: stored as 9(08).99 but string might be like '0000123456'?
-  function formatPrice(priceStr) {
-    if (!priceStr || priceStr.length < 3) return '';
-    let len = priceStr.length;
-    let dollars = priceStr.slice(0, len - 2).replace(/^0+/, '') || '0';
-    let cents = priceStr.slice(len - 2);
-    return `$${dollars}.${cents}`;
-  }
-
-  // Format proof to show decimal (e.g. '0950' = 95.0)
-  function formatProof(proofStr) {
-    if (!proofStr) return '';
-    if (proofStr.length === 5) {
-      // e.g. '099.9'
-      return proofStr;
+    function parseLine(line) {
+      return {
+        liquorCode: line.substring(0, 5).trim(),
+        brandName: line.substring(5, 37).trim(),
+        adaNumber: line.substring(37, 40).trim(),
+        adaName: line.substring(40, 65).trim(),
+        vendorName: line.substring(65, 90).trim(),
+        liquorType: line.substring(90, 110).trim(),
+        proof: line.substring(110, 115).trim(),
+        bottleSize: line.substring(115, 122).trim(),
+        packSize: line.substring(122, 125).trim(),
+        onPremPrice: line.substring(125, 136).trim(),
+        offPremPrice: line.substring(136, 147).trim(),
+        shelfPrice: line.substring(147, 158).trim(),
+        upc1: line.substring(158, 172).trim(),
+        upc2: line.substring(172, 186).trim(),
+        effectiveDate: line.substring(186, 194).trim(),
+      };
     }
-    // fallback: insert decimal before last digit
-    let n = parseInt(proofStr, 10);
-    if (isNaN(n)) return proofStr;
-    return (n / 10).toFixed(1);
-  }
 
-  function formatDate(mmddccyy) {
-    if (mmddccyy.length !== 8) return mmddccyy;
-    let mm = mmddccyy.slice(0, 2);
-    let dd = mmddccyy.slice(2, 4);
-    let yyyy = '20' + mmddccyy.slice(4, 6);
-    return `${mm}/${dd}/${yyyy}`;
-  }
-
-  async function loadData() {
-    document.getElementById('status').textContent = 'Loading data...';
-    try {
-      const res = await fetch(DATA_URL);
-      if (!res.ok) throw new Error('Failed to load data file.');
-      const text = await res.text();
-      const lines = text.split('\n').filter(l => l.trim().length >= 194);
-      products = lines.map(parseLine);
-      document.getElementById('status').textContent = `Loaded ${products.length} products.`;
-    } catch (e) {
-      document.getElementById('status').textContent = 'Error loading data: ' + e.message;
+    function formatPrice(str) {
+      // e.g. "000000762" means $7.62
+      if (!str || str.length < 3) return '';
+      let dollars = str.slice(0, -2).replace(/^0+/, '') || '0';
+      let cents = str.slice(-2);
+      return `$${dollars}.${cents}`;
     }
-  }
 
-  function searchProducts(query) {
-    query = query.trim().toLowerCase();
-    if (!query) return [];
-    return products.filter(p =>
-      p.liquorCode.toLowerCase().includes(query) ||
-      p.upc1.toLowerCase().includes(query) ||
-      p.upc2.toLowerCase().includes(query) ||
-      p.brandName.toLowerCase().includes(query) ||
-      p.adaName.toLowerCase().includes(query)
-    );
-  }
+    function formatProof(str) {
+      if (!str) return '';
+      if (str.includes('.')) return str; // Already formatted
+      let num = parseInt(str, 10);
+      if (isNaN(num)) return str;
+      return (num / 10).toFixed(1);
+    }
 
-  function displayResults(results) {
-    const tbody = document.getElementById('resultsBody');
-    tbody.innerHTML = '';
-    if (results.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="14">No results found.</td></tr>';
-    } else {
-      for (const p of results) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${p.liquorCode}</td>
-          <td>${p.brandName}</td>
-          <td>${p.adaName}</td>
-          <td>${p.vendorName}</td>
-          <td>${p.liquorType}</td>
-          <td>${formatProof(p.proof)}</td>
-          <td>${p.bottleSize}</td>
-          <td>${p.packSize}</td>
-          <td>${formatPrice(p.onPremPrice)}</td>
-          <td>${formatPrice(p.offPremPrice)}</td>
-          <td>${formatPrice(p.shelfPrice)}</td>
-          <td>${p.upc1}</td>
-          <td>${p.upc2}</td>
-          <td>${formatDate(p.effectiveDate)}</td>
-        `;
-        tbody.appendChild(tr);
+    function formatDate(str) {
+      if (!str || str.length !== 8) return str;
+      let mm = str.slice(0, 2);
+      let dd = str.slice(2, 4);
+      let yy = str.slice(4, 6);
+      let yyyy = '20' + yy;
+      return `${mm}/${dd}/${yyyy}`;
+    }
+
+    async function loadData() {
+      setStatus('Loading data, please wait...', '');
+      document.getElementById('loadBtn').disabled = true;
+
+      try {
+        const res = await fetch(DATA_FILE);
+        if (!res.ok) throw new Error('Failed to load data file.');
+
+        const text = await res.text();
+        const lines = text.split('\n').filter(line => line.length >= 194);
+        liquorData = lines.map(parseLine);
+        isLoaded = true;
+
+        setStatus(`✅ Loaded ${liquorData.length} products. You can now search!`, 'success');
+        document.getElementById('searchBox').disabled = false;
+        document.getElementById('loadBtn').textContent = 'Reload Data';
+        document.getElementById('loadBtn').disabled = false;
+        document.getElementById('searchBox').focus();
+        clearResults();
+      } catch (e) {
+        setStatus('❌ Error loading data: ' + e.message, 'error');
+        document.getElementById('loadBtn').disabled = false;
       }
     }
-    document.getElementById('resultsTable').hidden = false;
-  }
 
-  // Event listeners
-  document.getElementById('searchBtn').addEventListener('click', () => {
-    const query = document.getElementById('searchInput').value;
-    const results = searchProducts(query);
-    displayResults(results);
-  });
-
-  document.getElementById('searchInput').addEventListener('keypress', e => {
-    if (e.key === 'Enter') {
-      document.getElementById('searchBtn').click();
+    function setStatus(message, type) {
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = message;
+      statusEl.style.display = 'block';
+      statusEl.className = 'status ' + (type || '');
     }
-  });
 
-  loadData();
-</script>
+    function clearResults() {
+      document.getElementById('results').innerHTML = '';
+    }
 
+    function searchProducts(query) {
+      if (!query || query.length < 2) return [];
+      const q = query.toLowerCase();
+
+      return liquorData.filter(p =>
+        p.liquorCode.toLowerCase().includes(q) ||
+        p.upc1.toLowerCase().includes(q) ||
+        p.upc2.toLowerCase().includes(q) ||
+        p.brandName.toLowerCase().includes(q) ||
+        p.adaName.toLowerCase().includes(q)
+      ).slice(0, 30); // limit results for performance
+    }
+
+    function displayResults(products) {
+      const container = document.getElementById('results');
+      if (products.length === 0) {
+        container.innerHTML = `<div class="no-results">
+          <h3>No results found</h3>
+          <p>Try a different search term</p>
+        </div>`;
+        return;
+      }
+
+      let html = '';
+      for (const p of products) {
+        html += `<div class="product">
+          <div class="product-name">${escapeHtml(p.brandName || p.adaName || '')}</div>
+          <div class="product-details">
+            <div class="detail-row"><strong>Type:</strong> ${escapeHtml(p.liquorType)}</div>
+            <div class="detail-row"><strong>Size:</strong> ${escapeHtml(p.bottleSize)} | <strong>Proof:</strong> ${formatProof(p.proof)}</div>
+            <div class="detail-row"><strong>Vendor:</strong> ${escapeHtml(p.vendorName)}</div>
+          </div>
+          <div class="prices">
+            <div class="price-box">
+              <div class="price-label">On-Premise</div>
+              <div class="price-value">${formatPrice(p.onPremPrice)}</div>
+            </div>
+            <div class="price-box">
+              <div class="price-label">Off-Premise</div>
+              <div class="price-value">${formatPrice(p.offPremPrice)}</div>
+            </div>
+            <div class="price-box">
+              <div class="price-label">Shelf Price</div>
+              <div class="price-value">${formatPrice(p.shelfPrice)}</div>
+            </div>
+          </div>
+          <div class="codes">
+            Code: ${escapeHtml(p.liquorCode)}${p.upc1 ? ' | UPC #1: ' + escapeHtml(p.upc1) : ''}${p.upc2 ? ' | UPC #2: ' + escapeHtml(p.upc2) : ''}
+            <br>
+            Effective Date: ${formatDate(p.effectiveDate)}
+          </div>
+        </div>`;
+      }
+      container.innerHTML = html;
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/[&<>"']/g, function(m) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+      });
+    }
+
+    document.getElementById('loadBtn').addEventListener('click', loadData);
+
+    document.getElementById('searchBox').addEventListener('input', e => {
+      if (!isLoaded) return;
+      const query = e.target.value.trim();
+      if (query.length >= 2) {
+        const results = searchProducts(query);
+        displayResults(results);
+      } else {
+        clearResults();
+      }
+    });
+  </script>
 </body>
 </html>
