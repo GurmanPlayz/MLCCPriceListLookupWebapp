@@ -418,11 +418,12 @@
             finalCode = upcEtoUPC_A(qrCodeMessage);
           }
 
-          // Fix here for continuous mode so user just scans and results update automatically
           if (continuousScanMode) {
-            searchBox.value = finalCode;
-            searchBox.dispatchEvent(new Event('input'));
-            searchBox.blur();
+            // Run search for scanned code
+            const results = searchProducts(finalCode);
+            displayResults(results);
+            // Clear input box immediately, ready for next scan
+            searchBox.value = '';
             searchBox.focus();
           } else {
             html5QrcodeScanner.stop().then(() => {
@@ -439,13 +440,14 @@
           }
         },
         errorMessage => {
-          // ignore scanning errors silently
+          // ignoring scan errors silently
         }
       ).catch(err => {
         statusDiv.style.display = 'block';
         statusDiv.className = 'status error';
-        statusDiv.textContent = `Camera start error: ${err}`;
+        statusDiv.textContent = `Scanner error: ${err}`;
         scanBtn.disabled = false;
+        scannerContainer.style.display = 'none';
       });
     }
 
@@ -454,30 +456,28 @@
         html5QrcodeScanner.stop().then(() => {
           html5QrcodeScanner.clear();
           html5QrcodeScanner = null;
-        }).catch(console.warn);
+          scannerContainer.style.display = 'none';
+          scannerContainer.setAttribute('aria-hidden', 'true');
+          scanBtn.disabled = false;
+          statusDiv.style.display = 'none';
+        });
       }
-      scannerContainer.style.display = 'none';
-      scannerContainer.setAttribute('aria-hidden', 'true');
-      scanBtn.disabled = false;
-      searchBox.focus();
     }
 
-    // Toggle scan mode handler
+    // Event listeners
+    scanBtn.addEventListener('click', openScanner);
+    closeScannerBtn.addEventListener('click', closeScanner);
+
     toggleScanModeBtn.addEventListener('click', () => {
       continuousScanMode = !continuousScanMode;
-      toggleScanModeBtn.classList.toggle('active', continuousScanMode);
-      toggleScanModeBtn.textContent = continuousScanMode
-        ? 'Toggle Scan Mode: Continuous Scan'
-        : 'Toggle Scan Mode: Single Scan';
+      toggleScanModeBtn.classList.toggle('active');
+      toggleScanModeBtn.textContent = continuousScanMode ? 'Toggle Scan Mode: Continuous Scan' : 'Toggle Scan Mode: Single Scan';
       toggleScanModeBtn.setAttribute('aria-pressed', continuousScanMode.toString());
-    });
-
-    // Event listeners
-    scanBtn.addEventListener('click', () => {
-      openScanner();
-    });
-    closeScannerBtn.addEventListener('click', () => {
-      closeScanner();
+      // Clear status and results when toggling
+      statusDiv.style.display = 'none';
+      resultsDiv.innerHTML = '';
+      searchBox.value = '';
+      searchBox.focus();
     });
 
     searchBox.addEventListener('input', (e) => {
