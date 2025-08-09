@@ -143,7 +143,6 @@
       padding: 40px;
       color: #666;
     }
-    /* Scanner modal */
     #scannerContainer {
       display: none;
       position: fixed;
@@ -170,7 +169,6 @@
       padding: 10px 30px;
       font-weight: bold;
     }
-    /* Toggle button style */
     #toggleScanModeBtn {
       background: #28a745;
       margin-bottom: 15px;
@@ -205,17 +203,14 @@
     <div id="results" class="results" aria-live="polite"></div>
   </div>
 
-  <!-- Scanner Modal -->
   <div id="scannerContainer" role="dialog" aria-modal="true" aria-hidden="true">
     <div id="scanner"></div>
     <button id="closeScannerBtn" aria-label="Close barcode scanner">✖ Close Scanner</button>
   </div>
 
-  <!-- html5-qrcode library -->
   <script src="https://unpkg.com/html5-qrcode@2.3.7/html5-qrcode.min.js"></script>
 
   <script>
-    // Globals
     let liquorData = [];
     let isLoaded = false;
     const resultsDiv = document.getElementById('results');
@@ -227,10 +222,8 @@
     const toggleScanModeBtn = document.getElementById('toggleScanModeBtn');
     let html5QrcodeScanner = null;
 
-    // Scan mode: false = single scan, true = continuous scan
     let continuousScanMode = false;
 
-    // Load data from local file in same repo
     async function loadData() {
       try {
         const res = await fetch('webprbk.txt');
@@ -248,7 +241,6 @@
       }
     }
 
-    // Parse fixed-width data per format spec, trim & convert fields
     function parseData(txt) {
       liquorData = [];
       const lines = txt.split('\n');
@@ -298,7 +290,6 @@
       }
     }
 
-    // Search logic
     function searchProducts(query) {
       if (!query || query.length < 2) return [];
       const q = query.toLowerCase();
@@ -314,12 +305,10 @@
       }).slice(0, 20);
     }
 
-    // Format price to $xx.xx
     function formatPrice(p) {
       return '$' + p.toFixed(2);
     }
 
-    // Display results
     function displayResults(products) {
       if (products.length === 0) {
         resultsDiv.innerHTML = `<div class="no-results"><h3>No results found</h3><p>Try a different search term</p></div>`;
@@ -356,7 +345,6 @@
       resultsDiv.innerHTML = html;
     }
 
-    // UPC-E to UPC-A converter
     function upcEtoUPC_A(upce) {
       if (!/^\d{8}$/.test(upce)) return upce;
       const numSystem = upce[0];
@@ -380,8 +368,6 @@
       }
       return numSystem + result + checkDigit;
     }
-
-    // --- Barcode scanner ---
 
     function openScanner() {
       scanBtn.disabled = true;
@@ -419,10 +405,9 @@
           }
 
           if (continuousScanMode) {
-            // Run search for scanned code
+            // Search immediately on scan, then clear input for next scan
             const results = searchProducts(finalCode);
             displayResults(results);
-            // Clear input box immediately, ready for next scan
             searchBox.value = '';
             searchBox.focus();
           } else {
@@ -440,7 +425,7 @@
           }
         },
         errorMessage => {
-          // ignoring scan errors silently
+          // Ignore errors silently
         }
       ).catch(err => {
         statusDiv.style.display = 'block';
@@ -464,7 +449,6 @@
       }
     }
 
-    // Event listeners
     scanBtn.addEventListener('click', openScanner);
     closeScannerBtn.addEventListener('click', closeScanner);
 
@@ -473,7 +457,6 @@
       toggleScanModeBtn.classList.toggle('active');
       toggleScanModeBtn.textContent = continuousScanMode ? 'Toggle Scan Mode: Continuous Scan' : 'Toggle Scan Mode: Single Scan';
       toggleScanModeBtn.setAttribute('aria-pressed', continuousScanMode.toString());
-      // Clear status and results when toggling
       statusDiv.style.display = 'none';
       resultsDiv.innerHTML = '';
       searchBox.value = '';
@@ -491,7 +474,6 @@
       }
     });
 
-    // Load data on page load
     window.addEventListener('load', loadData);
   </script>
 </body>
