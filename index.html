@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>Michigan Liquor Price Search</title>
+  <title>Michigan Liquor Price Search with Scanner</title>
   <style>
+    /* Your previous styles here, unchanged */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 20px;
       background-color: #f5f5f5;
-      -webkit-text-size-adjust: 100%; /* iOS fix */
+      -webkit-text-size-adjust: 100%;
     }
-
     .container {
       max-width: 800px;
       margin: 0 auto;
@@ -21,23 +21,20 @@
       border-radius: 10px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-
     h1 {
       color: #333;
       text-align: center;
       margin-bottom: 10px;
     }
-
     .subtitle {
       text-align: center;
       color: #666;
       margin-bottom: 30px;
     }
-
     .search-section {
       margin-bottom: 30px;
+      position: relative;
     }
-
     input {
       width: 100%;
       padding: 12px;
@@ -46,31 +43,26 @@
       font-size: 16px;
       box-sizing: border-box;
     }
-
     input:focus {
       border-color: #007bff;
       outline: none;
     }
-
     .status {
       padding: 10px;
       margin: 10px 0;
       border-radius: 5px;
       display: none;
     }
-
     .status.success {
       background: #d4edda;
       color: #155724;
       border: 1px solid #c3e6cb;
     }
-
     .status.error {
       background: #f8d7da;
       color: #721c24;
       border: 1px solid #f5c6cb;
     }
-
     .help-text {
       background: #e9ecef;
       padding: 10px;
@@ -79,11 +71,9 @@
       color: #495057;
       margin-top: 10px;
     }
-
     .results {
       margin-top: 20px;
     }
-
     .product {
       border: 1px solid #ddd;
       border-radius: 5px;
@@ -93,34 +83,28 @@
       cursor: pointer;
       transition: background 0.2s;
     }
-
     .product:hover {
       background: #f0f8ff;
     }
-
     .product-name {
       font-size: 18px;
       font-weight: bold;
       color: #007bff;
       margin-bottom: 10px;
     }
-
     .product-details {
       margin-bottom: 15px;
     }
-
     .detail-row {
       margin-bottom: 5px;
       font-size: 14px;
     }
-
     .prices {
       display: flex;
       gap: 15px;
       margin-bottom: 10px;
       flex-wrap: wrap;
     }
-
     .price-box {
       background: #f8f9fa;
       padding: 10px;
@@ -129,31 +113,26 @@
       flex: 1;
       min-width: 120px;
     }
-
     .price-label {
       font-size: 12px;
       color: #666;
       margin-bottom: 5px;
     }
-
     .price-value {
       font-size: 16px;
       font-weight: bold;
       color: #007bff;
     }
-
     .codes {
       font-size: 12px;
       color: #666;
       margin-top: 10px;
     }
-
     .no-results {
       text-align: center;
       padding: 40px;
       color: #666;
     }
-
     /* Modal styles */
     #modal {
       display: none;
@@ -164,7 +143,6 @@
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
     }
-
     #modal-content {
       background: white;
       margin: 50px auto;
@@ -174,7 +152,6 @@
       box-sizing: border-box;
       position: relative;
     }
-
     #modal-close {
       position: absolute;
       right: 15px;
@@ -185,11 +162,9 @@
       border: none;
       background: none;
     }
-
     #modal-close:hover {
       color: #000;
     }
-
     #modal-fav-btn {
       font-size: 24px;
       background: none;
@@ -199,11 +174,9 @@
       margin-left: 10px;
       vertical-align: middle;
     }
-
     #modal-fav-btn.favorited {
       color: #e0245e;
     }
-
     #modal-title {
       font-size: 24px;
       font-weight: bold;
@@ -211,7 +184,6 @@
       display: inline-block;
       vertical-align: middle;
     }
-
     /* Responsive */
     @media (max-width: 480px) {
       .prices {
@@ -220,6 +192,62 @@
       .price-box {
         min-width: auto;
       }
+    }
+
+    /* Scanner UI */
+    #scanner-container {
+      display: none;
+      position: fixed;
+      z-index: 1500;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.75);
+      justify-content: center;
+      align-items: center;
+      padding: 10px;
+    }
+    #scanner {
+      width: 100%;
+      max-width: 600px;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 10px #000;
+      background: #000;
+    }
+    #close-scanner-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: #fff;
+      border: none;
+      font-size: 20px;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 1600;
+    }
+    #scan-result {
+      color: #fff;
+      margin-top: 10px;
+      font-size: 18px;
+      text-align: center;
+    }
+
+    /* Scan button */
+    #scan-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+      width: 100%;
+    }
+    #scan-btn:hover {
+      background: #218838;
     }
   </style>
 </head>
@@ -236,6 +264,7 @@
         aria-label="Search liquor products"
         autocomplete="off"
       />
+      <button id="scan-btn" aria-label="Scan barcode to search">📷 Scan Barcode</button>
       <div id="status" class="status" role="alert" aria-live="polite"></div>
       <div class="help-text">
         <strong>Search Tips:</strong> Try "Grey Goose", "Bourbon", "Vodka", or codes like "121"
@@ -255,6 +284,16 @@
     </div>
   </div>
 
+  <!-- Scanner container -->
+  <div id="scanner-container" role="dialog" aria-modal="true" aria-label="Barcode scanner" aria-hidden="true">
+    <button id="close-scanner-btn" aria-label="Close scanner">&times;</button>
+    <div id="scanner"></div>
+    <div id="scan-result"></div>
+  </div>
+
+  <!-- html5-qrcode library -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
   <script>
     // Variables
     let liquorData = [];
@@ -269,6 +308,15 @@
     const modalCloseBtn = document.getElementById('modal-close');
     const modalFavBtn = document.getElementById('modal-fav-btn');
 
+    const scannerContainer = document.getElementById('scanner-container');
+    const scannerDiv = document.getElementById('scanner');
+    const closeScannerBtn = document.getElementById('close-scanner-btn');
+    const scanResult = document.getElementById('scan-result');
+    const scanBtn = document.getElementById('scan-btn');
+
+    // Barcode scanner instance
+    let html5QrcodeScanner;
+
     // Helpers
     function escapeHtml(text) {
       if (!text) return '';
@@ -279,18 +327,14 @@
                  .replace(/'/g, "&#039;");
     }
 
-    // Remove leading zeros in item codes
     function normalizeCode(code) {
       if (!code) return '';
       return code.replace(/^0+/, '') || '0';
     }
 
-    // Remove first two leading zeros in UPC and ensure 12 digits
     function normalizeUPC(upc) {
       if (!upc) return '';
-      // Remove leading zeros
       let trimmed = upc.replace(/^0{2}/, '');
-      // Pad start with zeros if less than 12 digits
       if (trimmed.length < 12) {
         trimmed = trimmed.padStart(12, '0');
       } else if (trimmed.length > 12) {
@@ -299,7 +343,6 @@
       return trimmed;
     }
 
-    // Fix prices with extra dots like "59..99" to "59.99"
     function fixPrice(rawPrice) {
       if (!rawPrice) return 0;
       const cleaned = rawPrice.replace(/\.{2,}/g, '.');
@@ -311,16 +354,13 @@
       return '$' + num.toFixed(2);
     }
 
-    // Format proof number (e.g. "090.0" -> "90.0")
     function formatProof(proof) {
       if (!proof) return '';
       let p = proof.trim();
-      // remove leading zeros (including leading zeros in integer part)
       p = p.replace(/^0+/, '');
       return p || '0.0';
     }
 
-    // Parse the fixed-width txt data line into an object
     function parseLine(line) {
       return {
         liquorCode: normalizeCode(line.slice(0,5).trim()),
@@ -341,7 +381,6 @@
       };
     }
 
-    // Load data from local file
     async function loadData() {
       status.style.display = 'block';
       status.className = 'status';
@@ -364,7 +403,6 @@
       }
     }
 
-    // Search function
     function searchProducts(query) {
       if (!query || query.length < 2) return [];
       const q = query.toLowerCase();
@@ -381,7 +419,6 @@
       return results.slice(0, 30);
     }
 
-    // Display search results
     function displayResults(products) {
       if (!products.length) {
         resultsDiv.innerHTML = `<div class="no-results"><h3>No results found</h3><p>Try a different search term</p></div>`;
@@ -418,7 +455,6 @@
       }
       resultsDiv.innerHTML = html;
 
-      // Add event listeners to open modal on click or Enter key
       document.querySelectorAll('.product').forEach(el => {
         el.addEventListener('click', () => openModal(el.getAttribute('data-code')));
         el.addEventListener('keydown', e => {
@@ -430,7 +466,6 @@
       });
     }
 
-    // Modal functions
     function openModal(code) {
       const p = liquorData.find(item => item.liquorCode === code);
       if (!p) return;
@@ -463,42 +498,35 @@
     function closeModal() {
       modal.style.display = 'none';
       modal.setAttribute('aria-hidden', 'true');
-      searchBox.focus();
     }
 
-    // Favorite management using localStorage
+    modalCloseBtn.addEventListener('click', closeModal);
+
+    window.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && modal.style.display === 'block') {
+        closeModal();
+      }
+    });
+
+    // Favorites management in localStorage
     function getFavorites() {
+      const fav = localStorage.getItem('favorites') || '[]';
       try {
-        return JSON.parse(localStorage.getItem('miLiquorFavorites')) || [];
+        return JSON.parse(fav);
       } catch {
         return [];
       }
     }
 
     function saveFavorites(favs) {
-      localStorage.setItem('miLiquorFavorites', JSON.stringify(favs));
-    }
-
-    function isFavorited(code) {
-      const favs = getFavorites();
-      return favs.includes(code);
-    }
-
-    function toggleFavorite(code) {
-      let favs = getFavorites();
-      if (favs.includes(code)) {
-        favs = favs.filter(c => c !== code);
-      } else {
-        favs.push(code);
-      }
-      saveFavorites(favs);
-      updateFavoriteButton(code);
+      localStorage.setItem('favorites', JSON.stringify(favs));
     }
 
     function updateFavoriteButton(code) {
-      if (isFavorited(code)) {
+      const favs = getFavorites();
+      if (favs.includes(code)) {
         modalFavBtn.classList.add('favorited');
-        modalFavBtn.innerHTML = '&#9829;'; // solid heart
+        modalFavBtn.innerHTML = '&#10084;'; // solid heart
         modalFavBtn.setAttribute('aria-label', 'Remove from favorites');
       } else {
         modalFavBtn.classList.remove('favorited');
@@ -507,10 +535,26 @@
       }
     }
 
-    // Event listeners
-    searchBox.addEventListener('input', () => {
+    modalFavBtn.addEventListener('click', () => {
+      const code = modalTitle.getAttribute('data-code');
+      if (!code) return;
+
+      const favs = getFavorites();
+      if (favs.includes(code)) {
+        const idx = favs.indexOf(code);
+        favs.splice(idx, 1);
+      } else {
+        favs.push(code);
+      }
+      saveFavorites(favs);
+      updateFavoriteButton(code);
+    });
+
+    // Search handling
+    searchBox.addEventListener('input', e => {
       if (!isLoaded) return;
-      const query = searchBox.value.trim();
+
+      const query = e.target.value.trim();
       if (query.length >= 2) {
         const results = searchProducts(query);
         displayResults(results);
@@ -519,29 +563,79 @@
       }
     });
 
-    modalCloseBtn.addEventListener('click', closeModal);
-    modalFavBtn.addEventListener('click', () => {
-      const code = modalTitle.getAttribute('data-code');
-      toggleFavorite(code);
-    });
+    // --- SCANNER Integration ---
 
-    window.addEventListener('click', e => {
-      if (e.target === modal) {
-        closeModal();
+    function openScanner() {
+      scanResult.textContent = '';
+      scannerContainer.style.display = 'flex';
+      scannerContainer.setAttribute('aria-hidden', 'false');
+
+      html5QrcodeScanner = new Html5Qrcode("scanner");
+
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 100 },
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.ITF,
+          Html5QrcodeSupportedFormats.QR_CODE // just in case item codes as QR
+        ],
+      };
+
+      html5QrcodeScanner.start(
+        { facingMode: "environment" },
+        config,
+        qrCodeMessage => {
+          scanResult.textContent = `Scanned: ${qrCodeMessage}`;
+          stopScanner();
+          // Insert scanned code into search box and trigger search
+          searchBox.value = qrCodeMessage;
+          searchBox.dispatchEvent(new Event('input'));
+          closeScanner();
+        },
+        errorMessage => {
+          // no need to do anything on scan failure for now
+        }
+      ).catch(err => {
+        scanResult.textContent = 'Error starting camera: ' + err;
+      });
+    }
+
+    function stopScanner() {
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.stop().then(() => {
+          html5QrcodeScanner.clear();
+          html5QrcodeScanner = null;
+        }).catch(err => {
+          console.warn('Failed to stop scanner:', err);
+        });
       }
+    }
+
+    function closeScanner() {
+      stopScanner();
+      scannerContainer.style.display = 'none';
+      scannerContainer.setAttribute('aria-hidden', 'true');
+    }
+
+    scanBtn.addEventListener('click', () => {
+      openScanner();
+    });
+    closeScannerBtn.addEventListener('click', () => {
+      closeScanner();
     });
 
-    window.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && modal.style.display === 'block') {
-        closeModal();
-      }
-    });
-
-    // Initialize: load data on page load
+    // Load data on start
     window.addEventListener('load', () => {
       searchBox.disabled = true;
       loadData();
     });
+
   </script>
 </body>
 </html>
